@@ -17,11 +17,9 @@
 
 ## 截图
 
-![屏幕合上时，桌面折成磨砂玻璃](image/README/demo.webp)
+![屏幕合上时桌面折成磨砂玻璃，再展开](image/README/demo.webp)
 
-| 转轴在屏幕底边 | 转轴在底边下方 |
-| :---: | :---: |
-| ![默认转轴](image/README/fold-default.png) | ![转轴下移](image/README/fold-lower-hinge.png) |
+屏幕由 100° 合上再展开，动图循环播放。
 
 ## 目录
 

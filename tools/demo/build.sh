@@ -27,13 +27,17 @@ echo "[1/4] 合成演示用桌面图"
 python3 "$ROOT/tools/demo/make_desktop.py" "$WORK/desktop.png"
 
 echo "[2/4] 渲染各折叠角的画面"
-# 开合角 100° -> 0°，带缓动；首尾各停几帧便于循环。
+# 往返：开 -> 合 -> 开，首尾都停在展开位，于是首尾帧相同、可以无缝循环。
 # θ 与状态机一致：θ = 上限 × (原角度 − 当前角) / 原角度，默认上限 45、原角度 100。
 python3 - "$WORK" <<'PY'
 import os, subprocess, sys
 work = sys.argv[1]
-def ease(t): return t * t * (3 - 2 * t)
-lids = [100.0] * 5 + [100.0 * (1 - ease(i / 40)) for i in range(41)] + [0.0] * 5
+# 匀速而不是缓动：缓动会让帧堆在首尾，中段（屏幕仍可见、效果最明显）
+# 反而帧数太少，而末端「已合上」的空镜占掉一大截。
+def ease(t): return t
+HOLD, STEPS = 4, 52
+down = [100.0 * (1 - ease(i / STEPS)) for i in range(STEPS + 1)]
+lids = [100.0] * HOLD + down + [0.0] * HOLD + down[::-1] + [100.0] * HOLD
 thetas = sorted({round(45.0 * (100.0 - l) / 100.0, 2) for l in lids})
 subprocess.run([os.environ.get("PREVIEW", "build/bin/hinge_glass_preview"),
                 "--angles", ",".join(str(t) for t in thetas),

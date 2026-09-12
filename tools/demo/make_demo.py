@@ -113,12 +113,32 @@ def background():
     return img
 
 
+LID_BACK = (44, 47, 57)      # A 面（上盖外表面）
+
+
+def screen_facing(angle_deg):
+    """屏幕法线与视线的夹角余弦。>0 表示屏幕朝向相机，<=0 表示看到的是 A 面。
+
+    笔记本合上时屏幕是朝下的，所以低角度下必须显示 A 面，
+    否则会出现「A 面透出桌面内容」这种物理上不存在的画面。
+    """
+    a = np.radians(angle_deg)
+    normal = np.array([0.0, -np.sin(a), -np.cos(a)])      # 屏幕正面朝向
+    _, screen, _, _ = lid_frame(angle_deg)
+    center = np.mean(screen, axis=0)
+    eye = np.array([0.0, -3.05, 1.30])
+    v = eye - center
+    v /= np.linalg.norm(v)
+    return float(np.dot(v, normal))
+
+
 def compose(screen_img, angle_deg):
     bezel, screen, base, key = lid_frame(angle_deg)
     pb = project(bezel, VIEW)
     ps = project(screen, VIEW)
     pbase = project(base, VIEW)
     pkey = project(key, VIEW)
+    facing = screen_facing(angle_deg)
 
     img = background()
     d = ImageDraw.Draw(img)
@@ -156,17 +176,28 @@ def compose(screen_img, angle_deg):
                   [0.16, -0.50, 0.0], [-0.16, -0.50, 0.0]], VIEW)
     d.polygon([tuple(p) for p in tp], fill=(52, 55, 67), outline=(70, 74, 90))
 
-    # 屏幕边框
-    d.polygon([tuple(p) for p in pb], fill=SCREEN_BG, outline=(70, 74, 90))
+    # 盖板。朝向相机时是屏幕边框，背朝相机时是 A 面。
+    if facing > 0:
+        d.polygon([tuple(p) for p in pb], fill=SCREEN_BG, outline=(70, 74, 90))
+    else:
+        d.polygon([tuple(p) for p in pb], fill=LID_BACK, outline=(96, 100, 118))
+        # A 面上一个简单的印记
+        c = project([np.mean(lid_frame(angle_deg)[0], axis=0)], VIEW)[0]
+        d.ellipse([c[0] - 11, c[1] - 11, c[0] + 11, c[1] + 11], outline=(74, 78, 94), width=2)
+        d.ellipse([c[0] - 4, c[1] - 4, c[0] + 4, c[1] + 4], fill=(74, 78, 94))
 
-    # 画面按单应变换贴到屏幕上
-    src = [(0, 0), (screen_img.width, 0), (screen_img.width, screen_img.height), (0, screen_img.height)]
-    coeffs = find_coeffs([tuple(p) for p in ps], src)
-    warped = screen_img.transform((W, H), Image.PERSPECTIVE, coeffs, Image.BICUBIC)
+    # 画面按单应变换贴到屏幕上。掠射角附近让画面淡出，
+    # 这样关闭过程的最后一小段自然过渡到 A 面，不会突然跳变。
+    if facing > 0:
+        alpha = min(1.0, facing / 0.18)
+        src = [(0, 0), (screen_img.width, 0),
+               (screen_img.width, screen_img.height), (0, screen_img.height)]
+        coeffs = find_coeffs([tuple(p) for p in ps], src)
+        warped = screen_img.transform((W, H), Image.PERSPECTIVE, coeffs, Image.BICUBIC)
 
-    mask = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(mask).polygon([tuple(p) for p in ps], fill=255)
-    img.paste(warped, (0, 0), mask)
+        mask = Image.new("L", (W, H), 0)
+        ImageDraw.Draw(mask).polygon([tuple(p) for p in ps], fill=int(255 * alpha))
+        img.paste(warped, (0, 0), mask)
     return img
 
 
@@ -192,8 +223,8 @@ def main():
         if path not in cache:
             cache[path] = Image.open(path).convert("RGB")
         out.append(compose(cache[path], lid))
-        if i % 10 == 0:
-            print(f"  合成 {i}/{len(lids)}")
+        if i % 20 == 0:
+            print(f"  合成 {i}/{len(lids)}  开合角 {lid:5.1f}°  朝向 {screen_facing(lid):+.2f}")
 
     # 以 .webp 结尾就直接编码动图，否则当成目录写出逐帧 PNG
     # （逐帧 PNG 交给 ffmpeg 编码，这样重复帧的停顿时长不会被合并掉）

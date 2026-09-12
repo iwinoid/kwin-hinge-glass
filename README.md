@@ -17,11 +17,9 @@ The effect renders the scene into its own framebuffer and draws it back with a c
 
 ## Screenshots
 
-![The desktop folds into frosted glass as the lid closes](image/README/demo.webp)
+![The desktop folds into frosted glass as the lid closes, then returns](image/README/demo.webp)
 
-| Fold, hinge at the bottom edge | Fold, hinge below the bottom edge |
-| :---: | :---: |
-| ![Default hinge](image/README/fold-default.png) | ![Lower hinge](image/README/fold-lower-hinge.png) |
+The lid closes from 100° and opens again. The recording loops.
 
 
 ## Table of Contents
