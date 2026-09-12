@@ -136,7 +136,7 @@ Open **System Settings → Desktop Effects → Hinge Glass → ⚙**.
 | Setting | Default | Purpose |
 |---|---|---|
 | Original Angle | 100° | At or above this angle the effect is off. Below it the effect starts and grows with the fold. |
-| Fold Limit | 45° | The effect is at full strength this far below the Original Angle. |
+| Fold Limit | 45° | The fold angle at full closure. The effect grows with the fraction of the way from the Original Angle down to closed, so it keeps changing over the whole travel. |
 | Still Tolerance | 10° | Movement within this range lets the dwell timer continue. |
 | Hinge Position | 0 | Distance from the effective rotation center to the bottom edge of the screen, divided by screen height. See below. |
 | Hold After Stop | 300 ms | The effect stays this long after the lid stops moving. Type any value from 0 to 5000. |

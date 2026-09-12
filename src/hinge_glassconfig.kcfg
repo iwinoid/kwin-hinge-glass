@@ -14,7 +14,7 @@
             <max>360.0</max>
         </entry>
         <entry name="MaxAngle" type="Double">
-            <label>折叠角上限（比原角度再低这么多即满效果）</label>
+            <label>折叠角上限（完全合上时达到的折叠角）</label>
             <default>45.0</default>
             <min>5.0</min>
             <max>90.0</max>

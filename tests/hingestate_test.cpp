@@ -157,20 +157,43 @@ static void test_below_original_angle_produces_effect()
     HingeState s(cfg(100.0, 45.0, /*persist=*/true));
     Clock t = 0;
     s.onAngle(150, t);
-    t = feed(s, 80, t, 1500); // 折到 80 -> 目标 θ = 20
+    t = feed(s, 80, t, 1500); // 折到 80：θ = 45 × (100−80)/100 = 9
 
     CHECK(s.phase() == Phase::Active);
-    CHECK_NEAR(s.theta(), 20.0, 0.5);
+    CHECK_NEAR(s.theta(), 9.0, 0.5);
 }
 
-static void test_theta_is_clamped_to_max()
+static void test_theta_scales_with_fold_fraction()
 {
+    // θ = 上限 × (原角度 − 当前角) / 原角度，即按「折了多少 / 原角度」归一化
     HingeState s(cfg(100.0, 45.0, /*persist=*/true));
     Clock t = 0;
     s.onAngle(150, t);
-    t = feed(s, 30, t, 2000); // 100-30 = 70 -> 钳到 45
+    t = feed(s, 50, t, 2000); // (100−50)/100 = 0.5 -> θ = 22.5
 
-    CHECK_NEAR(s.theta(), 45.0, 0.5);
+    CHECK_NEAR(s.theta(), 22.5, 0.5);
+}
+
+static void test_no_early_saturation()
+{
+    // 回归测试。用户实测：折到 60° 以下画面完全冻结。
+    // 原因是当时 θ = clamp(原角度 − 当前角, 0, 上限)，在 55° 就触顶，
+    // 之后一路折到合上都没有任何变化。归一化后必须全程连续响应。
+    HingeState s(cfg(100.0, 45.0, /*persist=*/true));
+    Clock t = 0;
+    s.onAngle(150, t);
+
+    t = feed(s, 60, t, 1500);
+    const double at60 = s.theta();
+    t = feed(s, 30, t, 1500);
+    const double at30 = s.theta();
+    t = feed(s, 5, t, 2500);
+    const double at5 = s.theta();
+
+    CHECK(at60 < at30);      // 60° 到 30° 必须还在变化
+    CHECK(at30 < at5);       // 30° 到 5° 必须还在变化
+    CHECK(at60 < 20.0);      // 60° 时还很轻
+    CHECK(at5 > 42.0);       // 接近合上时才接近满效果
 }
 
 static void test_exactly_at_original_angle_is_zero()
@@ -246,7 +269,7 @@ static void test_dwell_mode_fades_out_even_while_folded()
     s.onAngle(150, t);
     t = feed(s, 60, t, 250); // 停手模式：dwell 300ms 尚未走完
     CHECK(s.phase() == Phase::Active);
-    CHECK(s.theta() > 30.0);
+    CHECK(s.theta() > 15.0);   // 60° 时 θ ≈ 18
 
     // 一直折着不动，但停手模式会淡出
     t = feed(s, 60, t, 1500);
@@ -265,7 +288,7 @@ static void test_persist_mode_keeps_effect_while_folded()
     // 折着不动很久也应当继续显示
     t = feed(s, 60, t, 3000);
     CHECK(s.phase() == Phase::Active);
-    CHECK(s.theta() > 35.0);
+    CHECK(s.theta() > 15.0);   // 60° 时 θ ≈ 18
 }
 
 static void test_persist_mode_ends_when_back_to_original_angle()
@@ -340,7 +363,7 @@ static void test_nodata_holds_theta()
     s.onAngle(150, t);
     t = feed(s, 40, t, 1500);
     const double before = s.theta();
-    CHECK(before > 40.0);
+    CHECK(before > 25.0);   // 40° 时 θ ≈ 27
 
     t = feedNoData(s, t, 300);
     CHECK_NEAR(s.theta(), before, 1.0); // 不出现假跳变
@@ -425,7 +448,8 @@ int main()
     test_above_original_angle_has_no_effect();
     test_jitter_above_original_angle_never_triggers();
     test_below_original_angle_produces_effect();
-    test_theta_is_clamped_to_max();
+    test_theta_scales_with_fold_fraction();
+    test_no_early_saturation();
     test_exactly_at_original_angle_is_zero();
     test_holding_still_does_not_retrigger();
     test_deeper_fold_retriggers();
