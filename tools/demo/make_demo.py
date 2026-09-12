@@ -76,19 +76,21 @@ def lid_frame(angle_deg):
     a = np.radians(angle_deg)
     d = np.array([0.0, -np.cos(a), np.sin(a)])       # 屏幕由铰链伸出的方向
     half = LAP_W / 2.0
+    top = d * LID_H                                  # 盖板外沿的上边
 
-    # 屏幕显示区。四角顺序必须与图像的「左上、右上、右下、左下」一致，
+    # 盖板外沿尺寸 = 机身尺寸（宽 LAP_W，高 LID_H）。
+    # 曾经写成 half + BEZEL，那是把边框往**外**扩，盖板因此比机身宽了 4.4%。
+    # 边框要往里缩，显示区再从盖板外沿内缩一圈。
+    bezel = [np.array([-half, 0, 0]), np.array([half, 0, 0]),
+             np.array([half, 0, 0]) + top, np.array([-half, 0, 0]) + top]
+
+    # 显示区。四角顺序必须与图像的「左上、右上、右下、左下」一致，
     # 否则单应变换会把画面上下颠倒。
-    dw = half - BEZEL
-    screen = [np.array([-dw, 0, 0]) + d * (LID_H - BEZEL),   # 左上
-              np.array([dw, 0, 0]) + d * (LID_H - BEZEL),    # 右上
-              np.array([dw, 0, 0]) + d * BEZEL,              # 右下（靠铰链）
-              np.array([-dw, 0, 0]) + d * BEZEL]             # 左下（靠铰链）
-    # 屏幕边框（外扩一圈）
-    bw = half + BEZEL
-    bezel = [np.array([-bw, 0, 0]), np.array([bw, 0, 0]),
-             np.array([bw, 0, 0]) + d * (LID_H + 2 * BEZEL),
-             np.array([-bw, 0, 0]) + d * (LID_H + 2 * BEZEL)]
+    sw = half - BEZEL
+    screen = [np.array([-sw, 0, 0]) + d * (LID_H - BEZEL),   # 左上
+              np.array([sw, 0, 0]) + d * (LID_H - BEZEL),    # 右上
+              np.array([sw, 0, 0]) + d * BEZEL,              # 右下（靠铰链）
+              np.array([-sw, 0, 0]) + d * BEZEL]             # 左下（靠铰链）
 
     # 底座：由铰链往使用者方向伸出
     base = [np.array([-half, 0.0, 0.0]), np.array([half, 0.0, 0.0]),
