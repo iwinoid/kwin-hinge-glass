@@ -126,7 +126,7 @@ void HingeGlassEffect::reconfigure(ReconfigureFlags flags)
     m_taps = qBound(1, cg.readEntry(QStringLiteral("Taps"), HingeGlass::kMaxTaps), HingeGlass::kMaxTaps);
     m_hingePos = float(cg.readEntry(QStringLiteral("HingePosition"), 0.0));
     m_forceAngleDeg = cg.readEntry(QStringLiteral("ForceAngleDeg"), -999.0);
-    m_idlePollHz = qMax(1, cg.readEntry(QStringLiteral("IdlePollHz"), 10));
+    m_idlePollHz = qMax(1, cg.readEntry(QStringLiteral("IdlePollHz"), 20));
     m_activePollHz = qMax(1, cg.readEntry(QStringLiteral("ActivePollHz"), 30));
 
     HingeGlass::Config cfg;
@@ -138,7 +138,7 @@ void HingeGlassEffect::reconfigure(ReconfigureFlags flags)
     cfg.dwellMs = cg.readEntry(QStringLiteral("DwellMs"), 300);
     cfg.fadeMs = cg.readEntry(QStringLiteral("FadeMs"), 180);
     cfg.minEffectMs = cg.readEntry(QStringLiteral("MinEffectMs"), 350);
-    cfg.springFreq = cg.readEntry(QStringLiteral("SpringFreq"), 16.0);
+    cfg.springFreq = cg.readEntry(QStringLiteral("SpringFreq"), 30.0);
 
     if (m_state) {
         *m_state = HingeGlass::HingeState(cfg);

@@ -20,9 +20,20 @@ constexpr double kThetaEpsilonDeg = 1e-3;
 /// Active 阶段 θ 趋近目标的时间常数。状态切换靠它保持连续。
 constexpr double kThetaTauMs = 80.0;
 
-/// 半隐式欧拉的步长夹持。与 SpringFreq=16 一起保证 freq*dt < 2 的稳定条件。
+/// 半隐式欧拉的步长夹持。下限防止 dt=0，上限只用来兜住进程被挂起这类异常停顿。
 constexpr double kMinDtSec = 1.0 / 240.0;
-constexpr double kMaxDtSec = 1.0 / 20.0;
+constexpr double kMaxDtSec = 0.25;
+
+/// 弹簧积分允许的最大 ω·dt。
+///
+/// 半隐式欧拉在 ω·dt 接近 1 时不再收敛：临界阻尼的弹簧会持续振荡而不是稳定下来。
+/// 空闲轮询是 10Hz（dt=100ms），SpringFreq=16 时 ω·dt 会到 1.6 —— 实测平滑角
+/// 在 55~106 之间来回跳，thetaTarget 因此大半时间算出来是 0，
+/// 表现为「一动就抖、然后才跟上」。
+///
+/// 所以按这个上限把 dt 细分成多个子步。这样弹簧在任何轮询率下都按真实时间收敛，
+/// 而不是随轮询率变慢或发散。
+constexpr double kMaxOmegaDt = 0.25;
 
 /// 指数趋近：与帧率无关
 double approach(double current, double target, double dtMs, double tauMs)
@@ -53,9 +64,13 @@ void HingeState::advanceSpring(double dtSec)
     const double target = static_cast<double>(m_effective);
 
     const double w = m_cfg.springFreq;
-    const double accel = w * w * (target - m_springValue) - 2.0 * w * m_springVelocity;
-    m_springVelocity += accel * dt;
-    m_springValue += m_springVelocity * dt;
+    const int steps = std::max(1, int(std::ceil(w * dt / kMaxOmegaDt)));
+    const double h = dt / steps;
+    for (int i = 0; i < steps; ++i) {
+        const double accel = w * w * (target - m_springValue) - 2.0 * w * m_springVelocity;
+        m_springVelocity += accel * h;
+        m_springValue += m_springVelocity * h;
+    }
 }
 
 bool HingeState::onAngle(int deg, std::int64_t nowMs)

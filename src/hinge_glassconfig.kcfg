@@ -87,7 +87,7 @@
         <!-- 采样与平滑 -->
         <entry name="IdlePollHz" type="Int">
             <label>空闲时的传感器采样率</label>
-            <default>10</default>
+            <default>20</default>
             <min>2</min>
             <max>30</max>
         </entry>
@@ -98,8 +98,8 @@
             <max>120</max>
         </entry>
         <entry name="SpringFreq" type="Double">
-            <label>角度平滑弹簧频率（越高越跟手）</label>
-            <default>16.0</default>
+            <label>角度平滑弹簧频率（越高越跟手；低于 20 会有明显延迟感）</label>
+            <default>30.0</default>
             <min>4.0</min>
             <max>40.0</max>
         </entry>
