@@ -112,6 +112,9 @@ int main(int argc, char **argv)
                                 QStringLiteral("v"), QStringLiteral("0.0"));
     QCommandLineOption sizeOpt(QStringLiteral("size"), QStringLiteral("输出尺寸 WxH"),
                                QStringLiteral("WxH"), QStringLiteral("1280x800"));
+    QCommandLineOption inputOpt(QStringLiteral("input"),
+                                QStringLiteral("输入图像（默认用内置测试图案）"),
+                                QStringLiteral("文件"));
     QCommandLineOption flipOpt(QStringLiteral("flip-input"),
                                QStringLiteral("反向验证：按 Metal 约定上传（不镜像），而不是 KWin 约定"));
     parser.addOption(anglesOpt);
@@ -121,6 +124,7 @@ int main(int argc, char **argv)
     parser.addOption(tapsOpt);
     parser.addOption(hingeOpt);
     parser.addOption(sizeOpt);
+    parser.addOption(inputOpt);
     parser.addOption(flipOpt);
     parser.process(app);
 
@@ -171,7 +175,30 @@ int main(int argc, char **argv)
     // （gltexture.cpp:302 "our Y axis is flipped vs OpenGL"）。
     // 而 QImage 的 row 0 是顶部，原样上传时 row 0 会落在 v = 0，与 KWin 相反。
     // 所以必须镜像，否则预览器验证的是 Metal 的约定，会漏掉 KWin 里的上下颠倒。
-    QImage testImage = makeTestImage(size).flipped(Qt::Vertical);
+    // 有 --input 就用它按比例铺满（居中裁剪），否则用内置测试图案
+    QImage testImage;
+    const QString inputPath = parser.value(inputOpt);
+    if (!inputPath.isEmpty()) {
+        QImage src;
+        if (src.load(inputPath)) {
+            testImage = src.convertToFormat(QImage::Format_RGBA8888);
+            if (testImage.size() != size) {
+                testImage = testImage.scaled(size, Qt::KeepAspectRatioByExpanding,
+                                             Qt::SmoothTransformation);
+                testImage = testImage.copy((testImage.width() - size.width()) / 2,
+                                           (testImage.height() - size.height()) / 2,
+                                           size.width(), size.height());
+            }
+            std::fprintf(stderr, "[input] %s -> %dx%d\n", qPrintable(inputPath),
+                         testImage.width(), testImage.height());
+        } else {
+            std::fprintf(stderr, "[input] 读取失败，改用内置测试图案: %s\n", qPrintable(inputPath));
+        }
+    }
+    if (testImage.isNull()) {
+        testImage = makeTestImage(size);
+    }
+    testImage = testImage.flipped(Qt::Vertical);
     if (parser.isSet(flipOpt)) {
         testImage = testImage.flipped(Qt::Vertical); // 反向验证用
     }

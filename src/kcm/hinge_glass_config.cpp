@@ -197,7 +197,7 @@ public:
         lookForm->addRow(i18n("霜化采样数："),
                          makeSpin(look, QStringLiteral("Taps"), 1, 24, QString()));
         auto *tapsHint = new QLabel(
-            i18n("24 是原版做法。调低更省但模糊量也会减少，不只是画质变差。"), look);
+            i18n("24 是推荐值。调低更省，但模糊量也会减少，不只是画质变差。"), look);
         tapsHint->setWordWrap(true);
         lookForm->addRow(QString(), tapsHint);
         root->addWidget(look);

@@ -17,6 +17,8 @@ The effect renders the scene into its own framebuffer and draws it back with a c
 
 ## Screenshots
 
+![The desktop folds into frosted glass as the lid closes](image/README/demo.webp)
+
 | Fold, hinge at the bottom edge | Fold, hinge below the bottom edge |
 | :---: | :---: |
 | ![Default hinge](image/README/fold-default.png) | ![Lower hinge](image/README/fold-lower-hinge.png) |
@@ -207,6 +209,7 @@ A failure means the machine lacks the `cros-ec-lid-angle` sensor, and KWin skips
 | Sensors | `src/hingesensor.cpp`, `src/lidsensor.cpp` | Read the angle from sysfs. Read the lid switch from KWin input events. |
 | Settings panel | `src/kcm/` | The KCM page. |
 | Offline preview | `tools/preview/` | Renders the shader to a PNG file on its own. Use it to examine a shader change. |
+| Demo builder | `tools/demo/` | Builds the animated demo in this README. Run `./tools/demo/build.sh`. |
 
 Run the tests with `ctest` in the build directory.
 

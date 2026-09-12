@@ -60,9 +60,9 @@
             <max>2000</max>
         </entry>
 
-        <!-- 外观。Frost/Eye 的默认值是原版源码里的真值。改动前请注意：
-             Frost 的量级极易搞错，有效范围只有 0 到 0.18，
-             调大会整屏饱和而失去空间渐变。 -->
+        <!-- 外观。这两个值是反复比对后定下的，改动前请注意量级：
+             Frost 的有效范围只有 0 到 0.18，调大会整屏饱和、失去空间渐变；
+             Eye 控制透视强度，越大画面越平。 -->
         <entry name="Frost" type="Double">
             <label>霜化强度</label>
             <default>0.09</default>
@@ -76,7 +76,7 @@
             <max>6.0</max>
         </entry>
         <entry name="Taps" type="Int">
-            <label>霜化采样数（24 = 原版；调低更省但模糊量也随之减少）</label>
+            <label>霜化采样数（24 为推荐值；调低更省，模糊量也随之减少）</label>
             <default>24</default>
             <min>1</min>
             <max>24</max>

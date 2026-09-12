@@ -17,11 +17,11 @@
 
 ## 截图
 
+![屏幕合上时，桌面折成磨砂玻璃](image/README/demo.webp)
+
 | 转轴在屏幕底边 | 转轴在底边下方 |
 | :---: | :---: |
 | ![默认转轴](image/README/fold-default.png) | ![转轴下移](image/README/fold-lower-hinge.png) |
-
-两张图都来自离线预览器，画面里只有测试图案。
 
 ## 目录
 
@@ -208,6 +208,7 @@ sudo grep hinge_glass /proc/$(pgrep -x kwin_wayland)/maps
 | 传感器 | `src/hingesensor.cpp`、`src/lidsensor.cpp` | 从 sysfs 读角度，从 KWin 输入事件读合盖开关。 |
 | 设置面板 | `src/kcm/` | KCM 页面。 |
 | 离线预览 | `tools/preview/` | 脱离 KWin 把着色器渲染成 PNG。用它检查着色器改动。 |
+| 演示生成 | `tools/demo/` | 生成本 README 里的演示动图。运行 `./tools/demo/build.sh`。 |
 
 在构建目录里用 `ctest` 跑测试。
 
