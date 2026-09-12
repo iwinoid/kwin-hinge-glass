@@ -21,7 +21,6 @@ The effect renders the scene into its own framebuffer and draws it back with a c
 | :---: | :---: |
 | ![Default hinge](image/README/fold-default.png) | ![Lower hinge](image/README/fold-lower-hinge.png) |
 
-Both pictures come from the offline preview tool, which renders a test pattern. No desktop content is shown.
 
 ## Table of Contents
 
