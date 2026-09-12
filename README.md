@@ -140,6 +140,7 @@ Open **System Settings → Desktop Effects → Hinge Glass → ⚙**.
 | Still Tolerance | 10° | Movement within this range lets the dwell timer continue. |
 | Hinge Position | 0 | Distance from the effective rotation center to the bottom edge of the screen, divided by screen height. See below. |
 | Hold After Stop | 300 ms | The effect stays this long after the lid stops moving. Type any value from 0 to 5000. |
+| Hold Segments | `80:2000,100:300` | Hold time per angle band, as `angle:ms` pairs. Below 80° the effect holds 2000 ms after the lid stops. From 80° to 100° it holds 300 ms. Leave empty to use Hold After Stop over the whole range. |
 | Keep Until Return | off | Keep the effect while the lid stays folded. It ends when the lid returns to the Original Angle. This suits a demonstration. |
 | Restore Time | 180 ms | Fade-out time. It applies when Keep Until Return is off. |
 | Minimum Display | 350 ms | The shortest time the effect stays on screen. It prevents a short flash. |

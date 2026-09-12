@@ -7,14 +7,38 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace HingeGlass
 {
 
+/// 一个「停手时长」分段：角度低于 maxAngleDeg 时，停手后保持 dwellMs 毫秒。
+struct DwellSegment
+{
+    double maxAngleDeg = 0.0;
+    int dwellMs = 300;
+};
+
+/**
+ * 解析分段配置字符串，形如 "80:2000,100:300"。
+ *
+ * 语义：角度 < 80 用 2000ms；80 <= 角度 < 100 用 300ms；再往上没有匹配项。
+ * 返回按 maxAngleDeg 升序排好的列表。无法解析的条目直接跳过 ——
+ * 配置写错不该让整个特效失效。
+ */
+std::vector<DwellSegment> parseDwellSegments(const std::string &spec);
+
 struct Config
 {
-    /// 停手后保持满效果的时长
+    /// 停手后保持特效的时长（没有匹配到分段时的兜底）
     int dwellMs = 300;
+
+    /// 按角度分段的停手时长，按 maxAngleDeg 升序。空表示全程用 dwellMs。
+    std::vector<DwellSegment> segments;
+
+    /// 取某个角度对应的停手时长
+    int dwellFor(double angleDeg) const;
     /// 恢复正常显示的淡出时长
     int fadeMs = 180;
     /// 进入 Active 后至少显示这么久，防止刚触发就熄灭

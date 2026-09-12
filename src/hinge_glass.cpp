@@ -135,6 +135,8 @@ void HingeGlassEffect::reconfigure(ReconfigureFlags flags)
     cfg.stillToleranceDeg = cg.readEntry(QStringLiteral("StillToleranceDeg"), 10.0);
     cfg.persistWhileFolded = cg.readEntry(QStringLiteral("PersistWhileFolded"), false);
     cfg.dwellMs = cg.readEntry(QStringLiteral("DwellMs"), 300);
+    cfg.segments = HingeGlass::parseDwellSegments(
+        cg.readEntry(QStringLiteral("DwellSegments"), QStringLiteral("80:2000,100:300")).toStdString());
     cfg.fadeMs = cg.readEntry(QStringLiteral("FadeMs"), 180);
     cfg.minEffectMs = cg.readEntry(QStringLiteral("MinEffectMs"), 350);
     cfg.springFreq = cg.readEntry(QStringLiteral("SpringFreq"), 30.0);

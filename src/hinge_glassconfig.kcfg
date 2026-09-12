@@ -37,6 +37,10 @@
             <label>持续显示（勾选后回到原角度才消失，不做停手淡出）</label>
             <default>false</default>
         </entry>
+        <entry name="DwellSegments" type="String">
+            <label>按角度分段的停手时长（格式「角度:毫秒」，逗号分隔，例如 80:2000,100:300）</label>
+            <default>80:2000,100:300</default>
+        </entry>
         <entry name="DwellMs" type="Int">
             <label>停手后保持特效的时长（仅“停手淡出”模式）</label>
             <default>300</default>

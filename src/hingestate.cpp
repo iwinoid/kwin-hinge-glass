@@ -8,6 +8,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 namespace HingeGlass
 {
@@ -48,6 +50,65 @@ double approach(double current, double target, double dtMs, double tauMs)
     return current + (target - current) * (1.0 - std::exp(-dtMs / tauMs));
 }
 } // namespace
+
+std::vector<DwellSegment> parseDwellSegments(const std::string &spec)
+{
+    // 本项目以 -fno-exceptions 编译，所以不能用 std::stod / try-catch。
+    // 用 strtod/strtol 加 endptr 校验，且必须整段被消费 ——
+    // 否则 "80abc" 这类会被当成合法值。
+    const auto parseItem = [](const std::string &item, double &ang, long &ms) {
+        const std::size_t colon = item.find(':');
+        if (colon == std::string::npos) {
+            return false;
+        }
+        std::string a = item.substr(0, colon);
+        std::string b = item.substr(colon + 1);
+        const auto trim = [](std::string &t) {
+            const std::size_t f = t.find_first_not_of(" \t");
+            const std::size_t l = t.find_last_not_of(" \t");
+            t = (f == std::string::npos) ? std::string() : t.substr(f, l - f + 1);
+        };
+        trim(a);
+        trim(b);
+        if (a.empty() || b.empty()) {
+            return false;
+        }
+        char *endA = nullptr;
+        char *endB = nullptr;
+        ang = std::strtod(a.c_str(), &endA);
+        ms = std::strtol(b.c_str(), &endB, 10);
+        return endA == a.c_str() + a.size() && endB == b.c_str() + b.size() && ang > 0.0 && ms >= 0;
+    };
+
+    std::vector<DwellSegment> out;
+    std::size_t pos = 0;
+    while (pos < spec.size()) {
+        const std::size_t comma = spec.find(',', pos);
+        const std::string item = spec.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos);
+        double ang = 0.0;
+        long ms = 0;
+        if (parseItem(item, ang, ms)) {
+            out.push_back({ang, int(ms)});
+        }
+        if (comma == std::string::npos) {
+            break;
+        }
+        pos = comma + 1;
+    }
+    std::sort(out.begin(), out.end(),
+              [](const DwellSegment &a, const DwellSegment &b) { return a.maxAngleDeg < b.maxAngleDeg; });
+    return out;
+}
+
+int Config::dwellFor(double angleDeg) const
+{
+    for (const DwellSegment &seg : segments) {
+        if (angleDeg < seg.maxAngleDeg) {
+            return seg.dwellMs;
+        }
+    }
+    return dwellMs;
+}
 
 HingeState::HingeState(const Config &cfg)
     : m_cfg(cfg)
@@ -199,7 +260,7 @@ bool HingeState::step(std::int64_t nowMs, double dtMs)
             if (thetaTarget() <= kThetaEpsilonDeg) {
                 enterRelease(nowMs);
             }
-        } else if ((nowMs - m_stillSinceMs) >= m_cfg.dwellMs
+        } else if ((nowMs - m_stillSinceMs) >= m_cfg.dwellFor(m_springValue)
                    && (nowMs - m_startedMs) >= m_cfg.minEffectMs) {
             // 停手淡出模式：停手 DwellMs 后开始淡出，哪怕还折着
             enterRelease(nowMs);

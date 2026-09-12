@@ -1,5 +1,7 @@
 set(kwin_hinge_glass_config_SRCS
     hinge_glass_config.cpp
+    # 复用状态机里的分段解析（纯 C++，无 Qt 依赖）
+    ../hingestate.cpp
 )
 
 # 从 XML 生成 DBus 接口代码（生成的类名是 OrgKdeKwinEffectsInterface，

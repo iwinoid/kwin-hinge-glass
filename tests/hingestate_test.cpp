@@ -260,6 +260,84 @@ static void test_first_entry_has_no_threshold()
     CHECK(s.phase() == Phase::Active);
 }
 
+// ---------------------------------------------------------------- 分段停手时长
+
+static void test_parse_dwell_segments()
+{
+    auto v = parseDwellSegments("80:2000,100:300");
+    CHECK(v.size() == 2);
+    CHECK(v[0].maxAngleDeg == 80.0);
+    CHECK(v[0].dwellMs == 2000);
+    CHECK(v[1].maxAngleDeg == 100.0);
+    CHECK(v[1].dwellMs == 300);
+
+    // 乱序输入应当被排好
+    v = parseDwellSegments("100:300,80:2000");
+    CHECK(v.size() == 2);
+    CHECK(v[0].maxAngleDeg == 80.0);
+
+    // 空白容错
+    v = parseDwellSegments(" 80 : 2000 , 100 : 300 ");
+    CHECK(v.size() == 2);
+    CHECK(v[0].dwellMs == 2000);
+
+    // 坏条目跳过，好条目保留；配置写错不该让整个特效失效
+    v = parseDwellSegments("80:2000,坏掉了,100:300");
+    CHECK(v.size() == 2);
+    v = parseDwellSegments("abc:2000,80:xyz,100:300");
+    CHECK(v.size() == 1);
+    CHECK(v[0].maxAngleDeg == 100.0);
+
+    // 整段必须被消费："80abc" 不算合法
+    v = parseDwellSegments("80abc:2000");
+    CHECK(v.empty());
+
+    // 空串
+    CHECK(parseDwellSegments("").empty());
+}
+
+static void test_dwell_lookup()
+{
+    Config c = cfg(100.0, 45.0, false);
+    c.segments = parseDwellSegments("80:2000,100:300");
+    CHECK(c.dwellFor(20.0) == 2000);   // 深折
+    CHECK(c.dwellFor(79.9) == 2000);
+    CHECK(c.dwellFor(80.0) == 300);    // 边界归上一段
+    CHECK(c.dwellFor(95.0) == 300);
+    CHECK(c.dwellFor(150.0) == 300);   // 超出所有分段 -> dwellMs 兜底
+
+    // 没有分段时全程用 dwellMs
+    Config d = cfg(100.0, 45.0, false);
+    CHECK(d.dwellFor(20.0) == 300);
+}
+
+static void test_deep_fold_holds_longer_than_shallow()
+{
+    // 用户要的行为：0-80° 停手后保持 2000ms，80-100° 只保持 300ms
+    auto make = [] {
+        Config c = cfg(100.0, 45.0, false, /*dwell=*/300, /*fade=*/150);
+        c.segments = parseDwellSegments("80:2000,100:300");
+        return c;
+    };
+    for (double deep : {true, false}) {
+        const int angle = deep ? 60 : 90;          // 60° 落在深折段，90° 落在浅折段
+        HingeState s(make());
+        Clock t = 0;
+        s.onAngle(150, t);
+        // 弹簧从 150 走到原角度以下约 65ms，浅折段 dwell 只有 300ms，
+        // 所以这里只喂 250ms —— 喂多了浅折段已经淡出
+        t = feed(s, angle, t, 250);
+        CHECK(s.phase() == Phase::Active);
+
+        t = feed(s, angle, t, deep ? 800 : 400);   // 深折：800ms 后仍应在显示
+        if (deep) {
+            CHECK(s.phase() == Phase::Active);
+        } else {
+            CHECK(s.phase() != Phase::Active);     // 浅折：早已淡出
+        }
+    }
+}
+
 // ---------------------------------------------------------------- 两种时长模式
 
 static void test_dwell_mode_fades_out_even_while_folded()
@@ -455,6 +533,9 @@ int main()
     test_deeper_fold_retriggers();
     test_return_above_original_resets_gate();
     test_first_entry_has_no_threshold();
+    test_parse_dwell_segments();
+    test_dwell_lookup();
+    test_deep_fold_holds_longer_than_shallow();
     test_dwell_mode_fades_out_even_while_folded();
     test_persist_mode_keeps_effect_while_folded();
     test_persist_mode_ends_when_back_to_original_angle();

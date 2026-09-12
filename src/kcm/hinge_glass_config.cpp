@@ -13,6 +13,7 @@
 */
 
 #include "hinge_glassconfig.h"
+#include "hingestate.h"
 
 #include <KCModule>
 #include <KLocalizedString>
@@ -25,7 +26,11 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QLabel>
+#include <QHeaderView>
+#include <QHBoxLayout>
+#include <QPushButton>
 #include <QSpinBox>
+#include <QTableWidget>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -143,6 +148,39 @@ public:
         dwellHint->setWordWrap(true);
         timingForm->addRow(QString(), dwellHint);
 
+        // ---- 分段停手时长 ----
+        auto *segLabel = new QLabel(
+            i18n("按角度分段（可选）：角度低于某一段的上限时，用该段的停手时长。"
+                 "不填则全程用上面的统一值。分段按角度从小到大排列。"),
+            timing);
+        segLabel->setWordWrap(true);
+        timingForm->addRow(segLabel);
+
+        m_segTable = new QTableWidget(0, 2, timing);
+        m_segTable->setHorizontalHeaderLabels({i18n("角度上限"), i18n("停手时长")});
+        m_segTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+        m_segTable->verticalHeader()->setVisible(false);
+        m_segTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+        m_segTable->setMinimumHeight(110);
+        timingForm->addRow(m_segTable);
+
+        auto *segButtons = new QWidget(timing);
+        auto *segLayout = new QHBoxLayout(segButtons);
+        segLayout->setContentsMargins(0, 0, 0, 0);
+        auto *addBtn = new QPushButton(i18n("添加分段"), segButtons);
+        auto *delBtn = new QPushButton(i18n("删除选中"), segButtons);
+        segLayout->addWidget(addBtn);
+        segLayout->addWidget(delBtn);
+        segLayout->addStretch();
+        timingForm->addRow(segButtons);
+        connect(addBtn, &QPushButton::clicked, this, [this] { addSegmentRow(100.0, 300); });
+        connect(delBtn, &QPushButton::clicked, this, [this] {
+            const int row = m_segTable->currentRow();
+            if (row >= 0) {
+                m_segTable->removeRow(row);
+            }
+        });
+
         m_fadeSpin = makeSpin(timing, QStringLiteral("FadeMs"), 0, 2000, i18n(" 毫秒"));
         timingForm->addRow(i18n("恢复正常显示用时："), m_fadeSpin);
         m_minEffectSpin = makeSpin(timing, QStringLiteral("MinEffectMs"), 0, 2000, i18n(" 毫秒"));
@@ -209,6 +247,13 @@ public:
         m_demoAngle->setValue(demoOn ? force : 30.0);
         m_demoAngle->setEnabled(demoOn);
 
+        // 分段表
+        m_segTable->setRowCount(0);
+        for (const auto &seg : HingeGlass::parseDwellSegments(
+                 KWin::HingeGlassConfig::dwellSegments().toStdString())) {
+            addSegmentRow(seg.maxAngleDeg, seg.dwellMs);
+        }
+
         updateTimingEnabled();
     }
 
@@ -218,6 +263,17 @@ public:
         KWin::HingeGlassConfig::setForceAngleDeg(m_demoCheck->isChecked()
                                                      ? m_demoAngle->value()
                                                      : -999.0);
+
+        // 分段表序列化成 "角度:毫秒,..."，按角度升序
+        QStringList parts;
+        for (int row = 0; row < m_segTable->rowCount(); ++row) {
+            const auto *ang = qobject_cast<QDoubleSpinBox *>(m_segTable->cellWidget(row, 0));
+            const auto *ms = qobject_cast<QSpinBox *>(m_segTable->cellWidget(row, 1));
+            if (ang && ms) {
+                parts << QStringLiteral("%1:%2").arg(ang->value(), 0, 'f', 1).arg(ms->value());
+            }
+        }
+        KWin::HingeGlassConfig::setDwellSegments(parts.join(QLatin1Char(',')));
         KCModule::save();
 
         // [Effect-*] 的改动不会自动触发特效 reconfigure（KWin 的 configChanged
@@ -234,7 +290,31 @@ public:
         m_demoCheck->setChecked(false);
         m_demoAngle->setValue(30.0);
         m_demoAngle->setEnabled(false);
+        m_segTable->setRowCount(0);
+        addSegmentRow(80.0, 2000);
+        addSegmentRow(100.0, 300);
         updateTimingEnabled();
+    }
+
+private:
+    /// 往分段表加一行（角度上限 + 停手时长）
+    void addSegmentRow(double maxAngle, int dwellMs)
+    {
+        const int row = m_segTable->rowCount();
+        m_segTable->insertRow(row);
+
+        auto *ang = new QDoubleSpinBox(m_segTable);
+        ang->setRange(1.0, 360.0);
+        ang->setDecimals(1);
+        ang->setSuffix(i18n("°"));
+        ang->setValue(maxAngle);
+        m_segTable->setCellWidget(row, 0, ang);
+
+        auto *ms = new QSpinBox(m_segTable);
+        ms->setRange(0, 10000);
+        ms->setSuffix(i18n(" 毫秒"));
+        ms->setValue(dwellMs);
+        m_segTable->setCellWidget(row, 1, ms);
     }
 
 private Q_SLOTS:
@@ -250,6 +330,7 @@ private Q_SLOTS:
 private:
     QSpinBox *m_dwellSpin = nullptr;
     QCheckBox *m_persistCheck = nullptr;
+    QTableWidget *m_segTable = nullptr;
     QSpinBox *m_fadeSpin = nullptr;
     QSpinBox *m_minEffectSpin = nullptr;
     QCheckBox *m_demoCheck = nullptr;
