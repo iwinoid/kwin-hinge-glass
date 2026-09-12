@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 Iwinoid
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# 装完与升级后打印提示。同类包的惯例（见 kwin-effects-better-blur-dx）。
+
+_hint() {
+    printf '%b' "\e[1;33m==> NOTE: 打开 系统设置 -> 桌面特效，在「外观」组里启用「铰链玻璃」。\e[0m\n"
+    printf '%b' "\e[1;33m==> NOTE: 首次安装可以直接启用；覆盖升级则需要注销重登 —— KWin 不会卸载已经加载过的插件。\e[0m\n"
+    printf '%b' "\e[1;33m==> NOTE: 本特效用的是转轴角度传感器，只有 Chrome EC 的机器才有（Chromebook 全系，部分其他机型）。先用 hinge_poll.sh 检查，或直接看启用后有没有反应。\e[0m\n"
+}
+
+_hint_kwin() {
+    printf '%b' "\e[1;31m==> WARNING: 这个特效只对构建它的那个 KWin 版本有效。KWin 升级后插件会失效，而且 KWin 只写一行调试日志、不会报错 —— 表现为「勾了没反应」。此时重装本包即可（pkgrel 变了就说明需要重建）。\e[0m\n"
+}
+
+post_install() {
+    _hint
+}
+
+post_upgrade() {
+    _hint_kwin
+    _hint
+}

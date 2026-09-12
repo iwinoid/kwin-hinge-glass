@@ -31,6 +31,7 @@ The lid closes from 100° and opens again. The recording loops.
   - [Dependencies](#dependencies)
   - [Check your machine](#check-your-machine)
   - [Other sensors](#other-sensors)
+  - [From the AUR](#from-the-aur)
   - [From Source](#from-source)
   - [Uninstall](#uninstall)
 - [Usage](#usage)
@@ -94,6 +95,12 @@ To attach another sensor, change `findDevicePath()`, or replace the reader in th
 
 - Give the angle in degrees, from 0 to 360.
 - The effect treats a value of 400 or more as "no data", and then holds the last good angle. Report that value for an unreliable reading.
+
+### From the AUR
+
+```bash
+paru -S kwin-hinge-glass
+```
 
 ### From Source
 
@@ -176,7 +183,7 @@ The physical size of the panel is often unavailable. Measure the screen height a
 
 CI builds the effect against the KWin version in the Arch repositories every day. A green run means the code still compiles against today's KWin. A red run means the source needs a change before the next rebuild.
 
-Each green run that finds a new KWin version publishes a release named `kwin-<version>`. The archive holds both plugins and a short install note. The archive only works on that exact KWin version.
+The package on the AUR builds from source, so the result always matches the KWin on your machine. Run `paru -S kwin-hinge-glass` again after a KWin update. The package version shows when that is needed: `0.2.0-1` becomes `0.2.0-2`.
 
 The plugin factory ID contains the KWin version, for example `org.kde.kwin.EffectPluginFactory6.7.5`. A patch release of KWin changes that ID. KWin then rejects the plugin and writes one debug line only. Run `./rebuild.sh` after each KWin update.
 
@@ -239,7 +246,7 @@ Open an issue before a large change. Examine a shader change with `tools/preview
 
 ## Changelog
 
-- **1.0**: first release. It has the hinge angle sensor, the glass shader, the state machine, the settings panel, and the offline preview tool.
+- **0.2.0**: first release. It has the hinge angle sensor, the glass shader, the state machine, the settings panel, and the offline preview tool.
 
 ## License
 

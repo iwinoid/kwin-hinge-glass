@@ -1,0 +1,62 @@
+# Maintainer: Iwinoid <iwinoid@outlook.com>
+#
+# 提交到 AUR 时，把这个文件和 kwin-hinge-glass.install 一起放到 AUR 仓库根目录，
+# 然后 mksrcinfo / git push。用 `makepkg --printsrcinfo > .SRCINFO` 生成 .SRCINFO。
+#
+# 关于 pkgrel
+# -----------
+# 这个特效的插件工厂 ID 内嵌 KWin 版本（org.kde.kwin.EffectPluginFactory<版本>），
+# 所以**上游 KWin 每次补丁版升级都会让已装的产物失效**，而且 KWin 只写一行
+# debug 日志、静默拒绝加载 —— 表现为「特效勾了没反应」。
+#
+# 这就是 pkgrel 的用途：KWin 升级后把它 +1、重新提交，用户重装一次即可。
+# 用户那边看到版本号变成 0.2.0-2，就知道该重建了。参考同类包
+# kwin-effects-cube（2.0.0-5 就是重建过 5 次）。
+
+pkgname=kwin-hinge-glass
+pkgver=0.2.0
+pkgrel=1
+pkgdesc="KWin effect that folds the desktop into frosted glass while the laptop lid moves"
+arch=('x86_64')
+url="https://github.com/iwinoid/kwin-hinge-glass"
+license=('GPL-3.0-or-later')
+depends=(
+    'kwin'
+    'qt6-base'
+    'qt6-declarative'
+    'kconfig'
+    'kconfigwidgets'
+    'kcoreaddons'
+    'ki18n'
+    'kwidgetsaddons'
+    'kcmutils'
+    'kwindowsystem'
+    'kcolorscheme'
+    'libepoxy'
+)
+makedepends=(
+    'cmake'
+    'ninja'
+    'extra-cmake-modules'
+    'qt6-tools'
+    'vulkan-headers'
+)
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+install="$pkgname.install"
+
+build() {
+    cmake -B build -S "$pkgname-$pkgver" \
+        -G Ninja \
+        -DCMAKE_BUILD_TYPE=None \
+        -DCMAKE_INSTALL_PREFIX=/usr
+    cmake --build build
+}
+
+check() {
+    ctest --test-dir build --output-on-failure
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}
