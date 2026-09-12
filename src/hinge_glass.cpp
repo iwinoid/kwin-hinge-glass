@@ -38,6 +38,8 @@ Q_LOGGING_CATEGORY(KWIN_HINGEGLASS, "kwin_effect_hinge_glass", QtWarningMsg)
 
 namespace
 {
+/// θ 低于这个值就当作看不出效果，直接跳过渲染
+constexpr double kVisibleThetaDeg = 0.15;
 std::int64_t nowMs()
 {
     return QDateTime::currentMSecsSinceEpoch();
@@ -74,7 +76,7 @@ HingeGlassEffect::HingeGlassEffect()
             // 主动请求一次重绘把最后那一帧恢复正常画面；
             // 销毁资源则避免在挂起期间白占显存。
             destroyResources();
-            effects->addRepaintFull();
+            repaintInternalOutputs();
         }
         applyPollRate();
     });
@@ -132,6 +134,7 @@ void HingeGlassEffect::reconfigure(ReconfigureFlags flags)
     HingeGlass::Config cfg;
     cfg.originalAngle = cg.readEntry(QStringLiteral("OriginalAngle"), 100.0);
     cfg.maxAngle = cg.readEntry(QStringLiteral("MaxAngle"), 45.0);
+    cfg.curveExponent = cg.readEntry(QStringLiteral("CurveExponent"), 0.65);
     cfg.stillToleranceDeg = cg.readEntry(QStringLiteral("StillToleranceDeg"), 10.0);
     cfg.persistWhileFolded = cg.readEntry(QStringLiteral("PersistWhileFolded"), false);
     cfg.dwellMs = cg.readEntry(QStringLiteral("DwellMs"), 300);
@@ -151,7 +154,24 @@ void HingeGlassEffect::reconfigure(ReconfigureFlags flags)
 
     // reconfigure 之后主动请求一次重绘：KWin 的 reconfigureEffect 只重读配置，
     // 不会自己安排重绘，否则改完参数要等下一次自然重绘（如时钟跳动）才可见。
-    effects->addRepaintFull();
+    repaintInternalOutputs();
+}
+
+void HingeGlassEffect::repaintInternalOutputs()
+{
+    // 只重绘内置屏。addRepaintFull() 会把外接屏也一并重绘，
+    // 而这个特效跟外接屏毫无关系。
+    bool any = false;
+    const auto outputs = effects->screens();
+    for (LogicalOutput *output : outputs) {
+        if (output->isInternal()) {
+            effects->addRepaint(output->geometry());
+            any = true;
+        }
+    }
+    if (!any) {
+        repaintInternalOutputs();
+    }
 }
 
 void HingeGlassEffect::applyPollRate()
@@ -175,7 +195,7 @@ void HingeGlassEffect::handleAngle(int deg)
     }
     const bool wasActive = m_state->active();
     if (m_state->onAngle(deg, nowMs())) {
-        effects->addRepaintFull();
+        repaintInternalOutputs();
     }
     if (m_state->active() != wasActive) {
         applyPollRate();
@@ -192,7 +212,7 @@ void HingeGlassEffect::handleNoData()
     // 这条路径自然走停留计时，无需任何特判。
     const bool wasActive = m_state->active();
     if (m_state->onNoData(nowMs())) {
-        effects->addRepaintFull();
+        repaintInternalOutputs();
     }
     if (m_state->active() != wasActive) {
         applyPollRate();
@@ -230,7 +250,8 @@ int HingeGlassEffect::requestedEffectChainPosition() const
 
 void HingeGlassEffect::prePaintScreen(ScreenPrePaintData &data)
 {
-    if (isActive()) {
+    // 只对内置屏生效。外接屏应当原样输出，铰链跟它无关。
+    if (isActive() && data.screen && data.screen->isInternal()) {
         // 整屏内容都会被替换，必须强制全屏重绘
         data.mask |= PAINT_SCREEN_TRANSFORMED;
     }
@@ -283,7 +304,8 @@ HingeGlassEffect::OutputState *HingeGlassEffect::ensureOutput(LogicalOutput *scr
 void HingeGlassEffect::paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport,
                                    int mask, const Region &deviceRegion, LogicalOutput *screen)
 {
-    if (!isActive()) {
+    // 非内置屏直接透传 —— 特效只该作用在内置面板上
+    if (!isActive() || !screen || !screen->isInternal()) {
         effects->paintScreen(renderTarget, viewport, mask, deviceRegion, screen);
         return;
     }

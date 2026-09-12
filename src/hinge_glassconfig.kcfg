@@ -19,6 +19,12 @@
             <min>5.0</min>
             <max>90.0</max>
         </entry>
+        <entry name="CurveExponent" type="Double">
+            <label>强度曲线指数（小于 1 则开头更强、起效更快）</label>
+            <default>0.65</default>
+            <min>0.3</min>
+            <max>1.5</max>
+        </entry>
         <entry name="HingePosition" type="Double">
             <label>转轴位置：有效圆心距屏幕底边的距离 ÷ 屏高（0 = 圆心在底边）</label>
             <default>0.0</default>

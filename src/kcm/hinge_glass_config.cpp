@@ -101,13 +101,18 @@ public:
         triggerForm->addRow(i18n("折叠角上限："),
                             makeDoubleSpin(trigger, QStringLiteral("MaxAngle"), 5.0, 90.0, 0,
                                            i18n("°"), 5.0));
+        triggerForm->addRow(i18n("强度曲线指数："),
+                            makeDoubleSpin(trigger, QStringLiteral("CurveExponent"), 0.3, 1.5, 2,
+                                           QString(), 0.05));
         triggerForm->addRow(i18n("判定已停手的容差："),
                             makeDoubleSpin(trigger, QStringLiteral("StillToleranceDeg"), 0.0, 30.0, 1,
                                            i18n("°"), 0.5));
         auto *hint = new QLabel(
             i18n("角度高于「原角度」时完全无效果，低于它才出现，越往下越强。"
                  "把它设成你日常使用的角度，就能避免打字挪动笔记本时误触发。\n"
-                 "效果淡出后，再往下折就会重新出现。"),
+                 "效果淡出后，再往下折就会重新出现。\n"
+                 "强度随折叠深度增长；指数小于 1 时开头更强、起效更快，"
+                 "1.0 为线性。"),
             trigger);
         hint->setWordWrap(true);
         triggerForm->addRow(QString(), hint);

@@ -78,6 +78,9 @@ private:
     void handleNoData();
     void applyPollRate();
 
+    /// 只请求重绘内置屏 —— 特效不影响外接屏
+    void repaintInternalOutputs();
+
     HingeGlass::HingeSensor m_sensor;
     std::unique_ptr<HingeGlass::LidSensor> m_lidSensor;
     std::unique_ptr<HingeGlass::HingeState> m_state;

@@ -157,21 +157,36 @@ static void test_below_original_angle_produces_effect()
     HingeState s(cfg(100.0, 45.0, /*persist=*/true));
     Clock t = 0;
     s.onAngle(150, t);
-    t = feed(s, 80, t, 1500); // 折到 80：θ = 45 × (100−80)/100 = 9
+    t = feed(s, 80, t, 1500); // 折到 80：θ = 45 × 0.2^0.65 ≈ 15.8
 
     CHECK(s.phase() == Phase::Active);
-    CHECK_NEAR(s.theta(), 9.0, 0.5);
+    CHECK_NEAR(s.theta(), 15.8, 0.5);
 }
 
 static void test_theta_scales_with_fold_fraction()
 {
-    // θ = 上限 × (原角度 − 当前角) / 原角度，即按「折了多少 / 原角度」归一化
+    // θ = 上限 × (折了多少 / 原角度)^指数，默认指数 0.65
     HingeState s(cfg(100.0, 45.0, /*persist=*/true));
     Clock t = 0;
     s.onAngle(150, t);
-    t = feed(s, 50, t, 2000); // (100−50)/100 = 0.5 -> θ = 22.5
+    t = feed(s, 50, t, 2000); // 0.5^0.65 ≈ 0.637 -> θ ≈ 28.7
 
-    CHECK_NEAR(s.theta(), 22.5, 0.5);
+    CHECK_NEAR(s.theta(), 28.7, 0.5);
+}
+
+static void test_curve_lifts_the_early_response()
+{
+    // 归一化之后开头涨得太慢：线性时折下去 4° 才 θ=1.8°，肉眼看不见，
+    // 起效因此要等三百多毫秒。指数曲线把开头抬起来 —— 这是起效延迟
+    // 从 370ms 降到 192ms 的原因。完全合上时仍必须是满效果。
+    HingeState s(cfg(100.0, 45.0, /*persist=*/true));
+    Clock t = 0;
+    s.onAngle(150, t);
+    t = feed(s, 96, t, 1500);              // 只折了 4°
+    CHECK(s.theta() > 4.0);                // 线性时只有 1.8°
+
+    t = feed(s, 0, t, 3000);               // 完全合上
+    CHECK_NEAR(s.theta(), 45.0, 0.6);      // 仍应是满效果
 }
 
 static void test_no_early_saturation()
@@ -192,7 +207,7 @@ static void test_no_early_saturation()
 
     CHECK(at60 < at30);      // 60° 到 30° 必须还在变化
     CHECK(at30 < at5);       // 30° 到 5° 必须还在变化
-    CHECK(at60 < 20.0);      // 60° 时还很轻
+    CHECK(at60 < 26.0);      // 60° 时 0.4^0.65 × 45 ≈ 24.8
     CHECK(at5 > 42.0);       // 接近合上时才接近满效果
 }
 
@@ -527,6 +542,7 @@ int main()
     test_jitter_above_original_angle_never_triggers();
     test_below_original_angle_produces_effect();
     test_theta_scales_with_fold_fraction();
+    test_curve_lifts_the_early_response();
     test_no_early_saturation();
     test_exactly_at_original_angle_is_zero();
     test_holding_still_does_not_retrigger();
