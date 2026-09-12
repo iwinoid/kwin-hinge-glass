@@ -1,0 +1,23 @@
+# 可选：KWin 升级后自动重编铰链玻璃特效
+#
+# 安装：
+#   sudo cp packaging/hinge_glass.hook /etc/pacman.d/hooks/
+#   # 按需修改下面的 Exec 路径
+#
+# 为什么需要：插件工厂 IID 内嵌 KWin 版本号，补丁版本变化也会让插件静默失效。
+# 见项目 README 的「KWin 每个补丁版本都要重编」一节。
+#
+# 注意：
+#   * 这会显著拖慢每次 kwin 升级（要全量重编一遍）
+#   * 它不会替你注销重登 —— 装完仍需重登才生效
+#   * 如果不想每次都编，删掉这个 hook、改成手动跑 ./rebuild.sh
+
+[Trigger]
+Operation = Upgrade
+Type = Package
+Target = kwin
+
+[Action]
+Description = 重新编译铰链玻璃特效以匹配新的 KWin 版本…
+When = PostTransaction
+Exec = /usr/bin/su -l <你的用户名> -c '<仓库绝对路径>/rebuild.sh'

@@ -1,0 +1,73 @@
+Hinge Glass — a KWin effect
+Copyright 2026 Iwinoid
+
+This work is licensed under the GNU General Public License v3.0 or later.
+The full text is in LICENSE.
+
+
+================================================================================
+Third-party attribution
+================================================================================
+
+--- MacBook Duo / Hinge Glass ---
+
+The glass shader in src/glassshader.h is a line-by-line port of the Metal shader
+of the macOS prototype "MacBook Duo / Hinge Glass", from Swift and Metal to
+GLSL, with four changes. The file header of src/glassshader.h lists them.
+
+The prototype publishes no repository and no license file. Its author permits
+modification of the code. The maintainer of this project verified that
+statement. If the author later adds a license or objects, the wish of the
+author applies.
+
+--- Atomicx7/Duo-animation ---
+
+The projection model of the original iPhone Duo folding animation.
+https://github.com/Atomicx7/Duo-animation
+
+The prototype above names this project as its own reference. It also publishes
+no license file.
+
+--- Mac Duo (Apache License 2.0) ---
+
+Several timing and smoothing mechanisms come from Mac Duo:
+
+    Mac Duo
+    Copyright 2026 Makito
+    Originally developed by Makito.
+    https://github.com/sumimakito/Mac-Duo
+
+The original NOTICE is kept above, as clause 4(d) of the Apache License 2.0
+requires. The license text is at https://www.apache.org/licenses/LICENSE-2.0
+
+The ported parts, changed from Swift and AppKit to C++ and Qt:
+
+  * The critically damped spring. Source: Sources/MacDuo/CriticallyDampedSpring.swift
+  * The "still" test, which uses a reference point and a tolerance instead of
+    "no change at all". Source: Sources/MacDuo/LidController.swift, isPastTimeout
+  * The minimum display time, 0.35 s. Same source.
+  * Adaptive polling, at a low rate when idle and a high rate when active.
+    Same source.
+  * The observation that one mipmap sample can approximate the blur of many
+    taps. This became the Taps setting of this project.
+    Source: Sources/MacDuo/DepthShaders.swift
+
+--- KWin (GPL-2.0-or-later / GPL-3.0-or-later) ---
+
+This project is a KWin effect plugin. It links KWin::kwin and uses the public
+effect API. The offscreen framebuffer pattern comes from the built-in effects
+screentransform and zoom. The fullscreen quad and the shader loading pattern
+come from screentransform. KWin uses the dual license GPL-2.0-or-later and
+GPL-3.0-or-later, and it permits the upgrade to GPLv3.
+
+--- kwin-effects-better-blur-dx (GPL-3.0) ---
+
+The project layout comes from this effect. This includes the CMake targets and
+the install layout, the metadata.json skeleton, and the settings panel files.
+https://github.com/xarblu/kwin-effects-better-blur-dx
+
+--- Qt 6 (LGPL-3.0 / GPL-2.0) ---
+
+https://qt.io
+
+All other files in this project are original, or come from the projects above.

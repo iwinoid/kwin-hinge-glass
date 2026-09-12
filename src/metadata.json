@@ -1,0 +1,17 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "iwinoid"
+            }
+        ],
+        "Category": "Appearance",
+        "Description": "Folds the desktop into frosted glass while the lid hinge moves",
+        "Description[zh_CN]": "转轴开合时把桌面折成磨砂玻璃",
+        "EnabledByDefault": false,
+        "License": "GPL-3.0-or-later",
+        "Name": "Hinge Glass",
+        "Name[zh_CN]": "铰链玻璃"
+    },
+    "X-KDE-ConfigModule": "kwin_hinge_glass_config"
+}

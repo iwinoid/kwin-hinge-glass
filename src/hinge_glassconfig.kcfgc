@@ -1,0 +1,5 @@
+File=hinge_glassconfig.kcfg
+ClassName=HingeGlassConfig
+NameSpace=KWin
+Singleton=true
+Mutators=true
