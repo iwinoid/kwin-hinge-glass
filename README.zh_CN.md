@@ -269,7 +269,7 @@ sudo grep hinge_glass /proc/$(pgrep -x kwin_wayland)/maps
 
 ## 致谢
 
-- **MacBook Duo / Hinge Glass**：一个 macOS 原型。`src/glassshader.h` 里的玻璃着色器来自它。该项目的仓库与许可证文件均未公开。其作者允许修改其代码。见 [NOTICE](NOTICE)。
+- **MacBook Duo / Hinge Glass**（[jlxc2001/MacBook-Duo](https://github.com/jlxc2001/MacBook-Duo)）：一个 macOS 原型。`src/glassshader.h` 里的玻璃着色器来自它。该仓库没有许可证，而且是作者自己说明的。这意味着什么见 [NOTICE](NOTICE)。
 - [Atomicx7/Duo-animation](https://github.com/Atomicx7/Duo-animation)。原始折叠动画的投影模型。
 - [sumimakito/Mac-Duo](https://github.com/sumimakito/Mac-Duo)，Apache-2.0，Copyright 2026 Makito。时序与平滑机制来自这里。
 - [KWin](https://invent.kde.org/plasma/kwin)，GPL-2.0-or-later。特效 API，以及 `screentransform` 与 `zoom` 两个特效。它们示范了离屏帧缓冲的用法。

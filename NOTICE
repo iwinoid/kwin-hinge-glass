@@ -9,16 +9,35 @@ The full text is in LICENSE.
 Third-party attribution
 ================================================================================
 
---- MacBook Duo / Hinge Glass ---
+--- MacBook Duo / Hinge Glass (no license) ---
 
 The glass shader in src/glassshader.h is a line-by-line port of the Metal shader
-of the macOS prototype "MacBook Duo / Hinge Glass", from Swift and Metal to
-GLSL, with four changes. The file header of src/glassshader.h lists them.
+in Sources/GlassRenderer.swift of this project. The file header of
+src/glassshader.h lists the four changes.
 
-The prototype publishes no repository and no license file. Its author permits
-modification of the code. The maintainer of this project verified that
-statement. If the author later adds a license or objects, the wish of the
-author applies.
+    https://github.com/jlxc2001/MacBook-Duo
+
+The repository carries no license file. The author states this on purpose, in
+源码说明.md:
+
+    此源码包未添加新的开源许可证
+
+That is, "this source package adds no new open source license". No license means
+all rights reserved. The author grants no permission to modify or redistribute
+in writing.
+
+The maintainer of this project read the author's personal social media and
+understands that the author permits modification. That statement is not in
+writing in the repository.
+
+**Thus the shader file has no clear basis for redistribution.** The options are:
+
+  (a) Ask the author to add a license, for example MIT or Apache-2.0.
+  (b) Rewrite src/glassshader.h from a licensed source. sumimakito/Mac-Duo is
+      Apache-2.0 and implements the same effect. See the README.
+
+Until one of these happens, this repository must not be published or promoted.
+Personal use is unaffected.
 
 --- Atomicx7/Duo-animation ---
 

@@ -270,7 +270,7 @@ Run the tests with `ctest` in the build directory.
 
 ## Thanks
 
-- **MacBook Duo / Hinge Glass**: a macOS prototype. The glass shader in `src/glassshader.h` comes from it. The repository and the license file of the project are both unpublished. Its author permits modification of the code. See [NOTICE](NOTICE).
+- **MacBook Duo / Hinge Glass** ([jlxc2001/MacBook-Duo](https://github.com/jlxc2001/MacBook-Duo)): a macOS prototype. The glass shader in `src/glassshader.h` comes from it. The repository carries no license, and the author states that on purpose. See [NOTICE](NOTICE) for what that means here.
 - [Atomicx7/Duo-animation](https://github.com/Atomicx7/Duo-animation). The projection model of the original folding animation.
 - [sumimakito/Mac-Duo](https://github.com/sumimakito/Mac-Duo), Apache-2.0, Copyright 2026 Makito. The timing and smoothing mechanisms come from here.
 - [KWin](https://invent.kde.org/plasma/kwin), GPL-2.0-or-later. The effect API, and the `screentransform` and `zoom` effects, which show the offscreen framebuffer pattern.
