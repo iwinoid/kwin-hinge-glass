@@ -17,7 +17,7 @@ The effect renders the scene into its own framebuffer and draws it back with a c
 
 ## Screenshots
 
-![The desktop folds into frosted glass as the lid closes, then returns](image/README/demo.webp)
+![The desktop folds into frosted glass as the lid closes, then returns](image/README/hinge-glass-demo.webp)
 
 The lid closes from 100° and opens again. The recording loops.
 

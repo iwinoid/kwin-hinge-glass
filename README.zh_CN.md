@@ -17,7 +17,7 @@
 
 ## 截图
 
-![屏幕合上时桌面折成磨砂玻璃，再展开](image/README/demo.webp)
+![屏幕合上时桌面折成磨砂玻璃，再展开](image/README/hinge-glass-demo.webp)
 
 屏幕由 100° 合上再展开，动图循环播放。
 

@@ -15,7 +15,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-OUT="${1:-$ROOT/image/README/demo.webp}"
+# 注意：GitHub 的 README 图片走 camo 代理，**按 URL 缓存**。
+# 内容变了但文件名没变时，访客可能长时间看到旧图。
+# 所以改动动图内容后，请同时改文件名（或让调用方传新的输出路径）。
+OUT="${1:-$ROOT/image/README/hinge-glass-demo.webp}"
 QUALITY="${QUALITY:-80}"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
