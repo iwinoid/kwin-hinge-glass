@@ -179,6 +179,8 @@ CI 每天对 Arch 仓库里的 KWin 版本构建一次。绿色表示代码仍�
 
 插件工厂 ID 里含 KWin 版本号，例如 `org.kde.kwin.EffectPluginFactory6.7.5`。KWin 的补丁版本升级会改变这个 ID。KWin 随后拒绝该插件，并且只写一行调试日志。每次 KWin 升级后运行 `./rebuild.sh`。
 
+Plasma 的补丁版本按固定排期发布，间隔依次是 1、1、2、3、5、8 周。每四个月来一次大版本，然后重新开始这个节奏。所以大版本之后的三个月里大约要重编五次，之后会安静一阵。排期见 [Plasma 6 schedule](https://community.kde.org/Schedules/Plasma_6)。
+
 ### 新构建仍在跑旧代码
 
 KWin 会把加载过的插件一直留在内存里。禁用再启用只会产生新实例，代码仍是旧的。请注销重登。

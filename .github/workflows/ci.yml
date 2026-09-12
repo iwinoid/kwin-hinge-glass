@@ -20,10 +20,9 @@ on:
   push:
     branches: [main]
   pull_request:
-  schedule:
-    # 每天 06:17 UTC 跑一次。Arch 是滚动更新，KWin 升级会让插件静默失效，
-    # 定时跑能在你察觉之前发现「今天的 KWin 编不过了」。
-    - cron: '17 6 * * *'
+  # 不设定时：rebuild-on-kwin-update.yml 每天查一次 Arch 的 kwin 版本，
+  # 版本变了就构建 —— 那已经覆盖「KWin 升级把构建搞坏」这种情况。
+  # 两个工作流都定时跑等于白烧一份算力。
   workflow_dispatch:
 
 permissions:

@@ -180,6 +180,8 @@ Each green run that finds a new KWin version publishes a release named `kwin-<ve
 
 The plugin factory ID contains the KWin version, for example `org.kde.kwin.EffectPluginFactory6.7.5`. A patch release of KWin changes that ID. KWin then rejects the plugin and writes one debug line only. Run `./rebuild.sh` after each KWin update.
 
+Plasma publishes its bugfix releases on a fixed schedule. The gaps between them are 1, 1, 2, 3, 5 and 8 weeks. A feature release arrives every four months and starts the cycle again. Expect about five rebuilds in the three months after a feature release, then a quieter stretch. See the [Plasma 6 schedule](https://community.kde.org/Schedules/Plasma_6).
+
 ### A new build still runs the old code
 
 KWin keeps a loaded plugin in memory. A disable and enable cycle makes a new instance that runs the old code. Log out and log in again.

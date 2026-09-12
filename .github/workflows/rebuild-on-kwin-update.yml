@@ -32,7 +32,6 @@ jobs:
   check:
     name: 查 Arch 的 kwin 版本
     runs-on: ubuntu-latest
-    container: archlinux:latest
     outputs:
       version: ${{ steps.v.outputs.version }}
       needed: ${{ steps.v.outputs.needed }}
@@ -44,9 +43,22 @@ jobs:
       - name: 与已有 tag 比较
         id: v
         run: |
-          pacman -Sy --noconfirm >/dev/null
-          # pacman -Si 读的是仓库里的版本，不是容器里已装的版本
-          VERSION=$(pacman -Si kwin | awk '/^Version/{print $3}' | cut -d- -f1)
+          # 直接查 Arch 官方的包 API，不起容器 —— 每日检查只值一次 HTTP GET，
+          # 起一个 Arch 容器跑 pacman -Sy 要三十秒，没必要。
+          #
+          # 必须只认 core/extra：search 接口同时会返回 kde-unstable 里的
+          # 测试版（如 6.7.90），照着它构建是在追 beta。
+          VERSION=$(curl -fsSL --max-time 20 \
+            'https://archlinux.org/packages/search/json/?name=kwin&arch=x86_64' \
+            | python3 -c '
+          import json, sys
+          results = json.load(sys.stdin)["results"]
+          stable = [r for r in results
+                    if r["pkgname"] == "kwin" and r["repo"] in ("core", "extra")]
+          if not stable:
+              sys.exit("Arch 的 core/extra 里找不到 kwin")
+          print(stable[0]["pkgver"])
+          ')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           if git rev-parse -q --verify "refs/tags/kwin-$VERSION" >/dev/null; then
             echo "needed=no" >> "$GITHUB_OUTPUT"
