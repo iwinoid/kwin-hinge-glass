@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw, ImageFilter
 W, H = 960, 600
 LAP_W = 1.00          # 机身宽度
 LID_H = 0.625         # 屏幕高度（16:10）
-BASE_D = 0.54         # 底座进深
+BASE_D = LID_H        # 键盘面进深。真实笔记本这块与屏幕高度大致相等
 BEZEL = 0.022         # 屏幕边框
 
 BG_TOP = (18, 20, 28)
@@ -100,7 +100,7 @@ def lid_frame(angle_deg):
     return bezel, screen, base, key
 
 
-VIEW = look_at(eye=(0.0, -3.05, 1.30), target=(0.0, -0.30, 0.27))
+VIEW = look_at(eye=(0.0, -2.70, 1.62), target=(0.0, -0.31, 0.26))
 
 
 def background():
@@ -126,7 +126,7 @@ def screen_facing(angle_deg):
     normal = np.array([0.0, -np.sin(a), -np.cos(a)])      # 屏幕正面朝向
     _, screen, _, _ = lid_frame(angle_deg)
     center = np.mean(screen, axis=0)
-    eye = np.array([0.0, -3.05, 1.30])
+    eye = np.array([0.0, -2.70, 1.62])
     v = eye - center
     v /= np.linalg.norm(v)
     return float(np.dot(v, normal))
@@ -181,10 +181,19 @@ def compose(screen_img, angle_deg):
         d.polygon([tuple(p) for p in pb], fill=SCREEN_BG, outline=(70, 74, 90))
     else:
         d.polygon([tuple(p) for p in pb], fill=LID_BACK, outline=(96, 100, 118))
-        # A 面上一个简单的印记
-        c = project([np.mean(lid_frame(angle_deg)[0], axis=0)], VIEW)[0]
-        d.ellipse([c[0] - 11, c[1] - 11, c[0] + 11, c[1] + 11], outline=(74, 78, 94), width=2)
-        d.ellipse([c[0] - 4, c[1] - 4, c[0] + 4, c[1] + 4], fill=(74, 78, 94))
+        # A 面上的印记。必须画在 A 面所在的平面上再投影 ——
+        # 直接画 2D 圆的话它会永远正对相机，看起来像浮在空中。
+        a = np.radians(angle_deg)
+        up = np.array([0.0, -np.cos(a), np.sin(a)])       # 盖板平面内的「上」方向
+        right = np.array([1.0, 0.0, 0.0])                 # 盖板平面内的「右」方向
+        center = up * (LID_H * 0.5)
+        ring = [center + 0.052 * (np.cos(t) * right + np.sin(t) * up)
+                for t in np.linspace(0, 2 * np.pi, 32)]
+        ring_px = [tuple(p) for p in project(ring, VIEW)]
+        d.polygon(ring_px, outline=(78, 82, 98))
+        core = [center + 0.018 * (np.cos(t) * right + np.sin(t) * up)
+                for t in np.linspace(0, 2 * np.pi, 24)]
+        d.polygon([tuple(p) for p in project(core, VIEW)], fill=(78, 82, 98))
 
     # 画面按单应变换贴到屏幕上。掠射角附近让画面淡出，
     # 这样关闭过程的最后一小段自然过渡到 A 面，不会突然跳变。

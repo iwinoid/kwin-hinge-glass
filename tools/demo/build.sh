@@ -16,6 +16,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OUT="${1:-$ROOT/image/README/demo.webp}"
+QUALITY="${QUALITY:-80}"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
@@ -35,7 +36,7 @@ work = sys.argv[1]
 # 匀速而不是缓动：缓动会让帧堆在首尾，中段（屏幕仍可见、效果最明显）
 # 反而帧数太少，而末端「已合上」的空镜占掉一大截。
 def ease(t): return t
-HOLD, STEPS = 4, 52
+HOLD, STEPS = 5, 90
 down = [100.0 * (1 - ease(i / STEPS)) for i in range(STEPS + 1)]
 lids = [100.0] * HOLD + down + [0.0] * HOLD + down[::-1] + [100.0] * HOLD
 thetas = sorted({round(45.0 * (100.0 - l) / 100.0, 2) for l in lids})
@@ -53,6 +54,6 @@ python3 "$ROOT/tools/demo/make_demo.py" "$WORK" "$WORK/frames"
 
 echo "[4/4] 编码循环 WebP"
 mkdir -p "$(dirname "$OUT")"
-ffmpeg -y -hide_banner -loglevel error -framerate 20 -i "$WORK/frames/f%03d.png" \
-       -c:v libwebp_anim -lossless 0 -q:v 88 -loop 0 -an "$OUT"
+ffmpeg -y -hide_banner -loglevel error -framerate 25 -i "$WORK/frames/f%03d.png" \
+       -c:v libwebp_anim -lossless 0 -q:v "$QUALITY" -loop 0 -an "$OUT"
 printf '%s  %s KB\n' "$OUT" "$(( $(stat -c %s "$OUT") / 1024 ))"
