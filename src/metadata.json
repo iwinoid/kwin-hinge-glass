@@ -11,6 +11,7 @@
         "EnabledByDefault": false,
         "License": "GPL-3.0-or-later",
         "Name": "Hinge Glass",
+        "Version": "0.2.0",
         "Name[zh_CN]": "铰链玻璃"
     },
     "X-KDE-ConfigModule": "kwin_hinge_glass_config"
