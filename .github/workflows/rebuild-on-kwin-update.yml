@@ -37,7 +37,7 @@ jobs:
       version: ${{ steps.v.outputs.version }}
       needed: ${{ steps.v.outputs.needed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0        # 需要看到已有的 tag
 
@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux:latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 安装依赖
         run: |
@@ -117,7 +117,7 @@ jobs:
           tar -czf "kwin-hinge-glass-$TARGET.tar.gz" -C dist .
           ls -la ./*.tar.gz
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: ./*.tar.gz
@@ -128,9 +128,9 @@ jobs:
     if: needs.check.outputs.needed == 'yes'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist
 
