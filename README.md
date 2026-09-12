@@ -137,7 +137,6 @@ Open **System Settings → Desktop Effects → Hinge Glass → ⚙**.
 |---|---|---|
 | Original Angle | 100° | At or above this angle the effect is off. Below it the effect starts and grows with the fold. |
 | Fold Limit | 45° | The effect is at full strength this far below the Original Angle. |
-| Minimum Change | 10° | The smallest angle change that triggers the effect. Sensor noise is a few degrees, thus a low value can trigger on desk bumps. |
 | Still Tolerance | 10° | Movement within this range lets the dwell timer continue. |
 | Hinge Position | 0 | Distance from the effective rotation center to the bottom edge of the screen, divided by screen height. See below. |
 | Hold After Stop | 300 ms | The effect stays this long after the lid stops moving. Type any value from 0 to 5000. |
@@ -147,10 +146,12 @@ Open **System Settings → Desktop Effects → Hinge Glass → ⚙**.
 | Frost | 0.09 | Frost strength. The useful range is small, 0 to 0.18. |
 | Eye Distance | 2.4 | Perspective strength. A larger value flattens the effect. |
 | Frost Samples | 24 | The sample count for the frost. A lower value costs less and blurs less. |
-| Idle Rate | 10 Hz | Sensor rate while the lid stays still. |
+| Idle Rate | 20 Hz | Sensor rate while the lid stays still. Raise it for a faster first response, lower it to save power. |
 | Active Rate | 30 Hz | Sensor rate while the lid moves. |
-| Smoothing Spring | 16 rad/s | Smooths the sensor reading to the screen refresh rate. A higher value follows the lid more closely. |
+| Smoothing Spring | 30 rad/s | Smooths the sensor reading to the screen refresh rate. This sets the response speed. A low value makes the effect arrive late. |
 | Demo Mode | off | Hold a fixed fold angle. The effect ignores the sensor. Use it to show or tune the effect while the lid stays still. |
+
+The effect returns when you fold deeper than at the last fade. A small move in place changes nothing, and a fold in the other direction changes nothing. See [Hinge Position](#hinge-position) and the notes above.
 
 Each setting lives in the `[Effect-hinge_glass]` group of `kwinrc`.
 

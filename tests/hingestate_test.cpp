@@ -47,7 +47,6 @@ static int g_failures = 0;
 /// 默认测试配置：弹簧调快以便快速收敛，其余贴近产品默认
 static Config cfg(double originalAngle = 100.0, double maxAngle = 45.0,
                   bool persist = false, int dwell = 300, int fade = 180,
-                  double deadband = 10.0, double stillTol = 10.0,
                   int minEffect = 0, double springFreq = 40.0)
 {
     Config c;
@@ -57,8 +56,7 @@ static Config cfg(double originalAngle = 100.0, double maxAngle = 45.0,
     c.dwellMs = dwell;
     c.fadeMs = fade;
     c.minEffectMs = minEffect;
-    c.deadbandDeg = deadband;
-    c.stillToleranceDeg = stillTol;
+    c.stillToleranceDeg = 10.0;
     c.springFreq = springFreq;
     return c;
 }
@@ -184,14 +182,59 @@ static void test_exactly_at_original_angle_is_zero()
     CHECK_NEAR(s.theta(), 0.0, 0.5);
 }
 
-static void test_deadband_ignores_small_change()
+static void test_holding_still_does_not_retrigger()
 {
-    HingeState s(cfg(100.0, 45.0, false, 300, 180, 10.0));
+    // 停手淡出后完全不动，不应重新触发。
+    HingeState s(cfg(100.0, 45.0, false, 100, 150));
     Clock t = 0;
     s.onAngle(150, t);
-    t = feed(s, 145, t, 600); // 只动了 5°，低于死区 10°
+    t = feed(s, 60, t, 1200);
     CHECK(s.phase() == Phase::Stable);
-    CHECK_NEAR(s.theta(), 0.0, 1e-9);
+
+    t = feed(s, 60, t, 800);             // 保持不动
+    CHECK(s.phase() == Phase::Stable);
+    CHECK_NEAR(s.theta(), 0.0, 1e-6);
+}
+
+static void test_deeper_fold_retriggers()
+{
+    HingeState s(cfg(100.0, 45.0, false, 100, 150));
+    Clock t = 0;
+    s.onAngle(150, t);
+    t = feed(s, 60, t, 1200);
+    CHECK(s.phase() == Phase::Stable);
+    CHECK_NEAR(s.theta(), 0.0, 1e-6);
+
+    t = feed(s, 40, t, 60);              // 继续往下折（dwell 100ms，别喂过头）
+    CHECK(s.phase() == Phase::Active);
+    CHECK(s.theta() > 0.0);
+}
+
+static void test_return_above_original_resets_gate()
+{
+    // 折到 60 淡出后，把屏幕开回原角度上方，再折下来应当重新算作首次。
+    HingeState s(cfg(100.0, 45.0, false, 100, 150));
+    Clock t = 0;
+    s.onAngle(150, t);
+    t = feed(s, 60, t, 1200);
+    CHECK(s.phase() == Phase::Stable);
+
+    t = feed(s, 150, t, 800);            // 回到原角度上方
+    CHECK(s.phase() == Phase::Stable);
+
+    // 弹簧从 150 走到原角度以下约需 100ms；dwell 100ms 所以这段时间内仍是 Active
+    t = feed(s, 95, t, 150);             // 再次折下来（只深 5°）
+    CHECK(s.phase() == Phase::Active);
+}
+
+static void test_first_entry_has_no_threshold()
+{
+    // 首次起效不应有任何门槛 —— 慢折时固定死区曾经吃掉几百毫秒。
+    HingeState s(cfg(100.0, 45.0, true));   // 持续模式
+    Clock t = 0;
+    s.onAngle(105, t);                      // 起始在原角度上方
+    t = feed(s, 95, t, 200);                // 只折过 5°，没有任何门槛
+    CHECK(s.phase() == Phase::Active);
 }
 
 // ---------------------------------------------------------------- 两种时长模式
@@ -263,12 +306,12 @@ static void test_motion_during_fade_is_continuous()
     const double thetaFading = s.theta();
     CHECK(thetaFading < thetaMid);
 
-    // 又折下去 10°（达到死区），应当回到 Active。
+    // 又折下去 10°，应当回到 Active。
     // θ 必须从当前位置继续，而不是一步跳回满效果。
-    s.onAngle(50, t + 8);
+    t = feed(s, 50, t, 40);
     CHECK(s.phase() == Phase::Active);
     CHECK(s.theta() >= thetaFading);
-    CHECK(s.theta() < thetaFading + 8.0);
+    CHECK(s.theta() < 45.0);             // 目标已是 45，但 θ 仍在爬升，没有一步跳满
 }
 
 static void test_retrigger_after_fade_does_not_jump()
@@ -384,7 +427,10 @@ int main()
     test_below_original_angle_produces_effect();
     test_theta_is_clamped_to_max();
     test_exactly_at_original_angle_is_zero();
-    test_deadband_ignores_small_change();
+    test_holding_still_does_not_retrigger();
+    test_deeper_fold_retriggers();
+    test_return_above_original_resets_gate();
+    test_first_entry_has_no_threshold();
     test_dwell_mode_fades_out_even_while_folded();
     test_persist_mode_keeps_effect_while_folded();
     test_persist_mode_ends_when_back_to_original_angle();

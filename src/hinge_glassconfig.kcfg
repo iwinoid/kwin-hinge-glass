@@ -25,12 +25,6 @@
             <min>-0.5</min>
             <max>0.5</max>
         </entry>
-        <entry name="DeadbandDeg" type="Double">
-            <label>触发特效的最小角度变化</label>
-            <default>10.0</default>
-            <min>0.0</min>
-            <max>30.0</max>
-        </entry>
         <entry name="StillToleranceDeg" type="Double">
             <label>判定“已停手”的位移容差</label>
             <default>10.0</default>

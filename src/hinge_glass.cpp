@@ -132,7 +132,6 @@ void HingeGlassEffect::reconfigure(ReconfigureFlags flags)
     HingeGlass::Config cfg;
     cfg.originalAngle = cg.readEntry(QStringLiteral("OriginalAngle"), 100.0);
     cfg.maxAngle = cg.readEntry(QStringLiteral("MaxAngle"), 45.0);
-    cfg.deadbandDeg = cg.readEntry(QStringLiteral("DeadbandDeg"), 10.0);
     cfg.stillToleranceDeg = cg.readEntry(QStringLiteral("StillToleranceDeg"), 10.0);
     cfg.persistWhileFolded = cg.readEntry(QStringLiteral("PersistWhileFolded"), false);
     cfg.dwellMs = cg.readEntry(QStringLiteral("DwellMs"), 300);

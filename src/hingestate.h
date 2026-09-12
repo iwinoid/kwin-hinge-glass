@@ -38,8 +38,6 @@ struct Config
     /// 合盖在两种模式下都会立即取消。
     bool persistWhileFolded = false;
 
-    /// 触发特效所需的最小角度变化
-    double deadbandDeg = 10.0;
     /// 判定"已停手"的位移容差
     double stillToleranceDeg = 10.0;
     /// 角度平滑弹簧频率（rad/s）
@@ -98,6 +96,8 @@ public:
 
 private:
     bool step(std::int64_t nowMs, double dtMs);
+    /// 进入淡出：记录当前折叠深度，作为再次触发的门槛
+    void enterRelease(std::int64_t nowMs);
     void advanceSpring(double dtSec);
     /// 该平滑角度对应的目标 θ（单侧：只有低于原角度才非零）
     double thetaTarget() const;
@@ -107,16 +107,19 @@ private:
     Phase m_phase = Phase::Stable;
 
     int m_effective = 0;
-    int m_lastRaw = 0;
+    int m_lastRaw = 0;   // 最近一次原始读数（仅用于合盖/开盖的重建基准）
     bool m_hasEffective = false;
     bool m_lidClosed = false;
 
-    /// "已经发生过足够的角度变化"的闩锁。
+    /// 上次淡出结束时的 θ 目标值，用作"再次触发"的门槛。
     ///
-    /// 不能要求"有变化"和"θ目标>0"在同一拍同时成立：变化发生的那一拍弹簧还没
-    /// 收敛（θ目标仍为 0），等弹簧收敛了又不再有变化 —— 那样永远进不了 Active。
-    /// 闩锁在进入 Active 时清除，于是淡出结束后不会原地立刻重新触发。
-    bool m_armed = false;
+    /// 重触发判据是「θ 目标超过这个值」—— 也就是**比上次淡出时折得更深**。
+    /// 用它取代固定死区的原因：
+    ///   * 折着不动、原地晃动都不会重触发
+    ///   * 继续往下折则立刻回来，且不受死区门槛限制
+    ///   * 首次起效也没有门槛（参考值为 0），慢折时不再被死区吃掉几百毫秒
+    /// 角度回到原角度上方时复位为 0。
+    double m_retriggerTarget = 0.0;
 
     // 角度弹簧（半隐式欧拉）
     double m_springValue = 0.0;

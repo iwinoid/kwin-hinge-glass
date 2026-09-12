@@ -20,6 +20,10 @@ constexpr double kThetaEpsilonDeg = 1e-3;
 /// Active 阶段 θ 趋近目标的时间常数。状态切换靠它保持连续。
 constexpr double kThetaTauMs = 80.0;
 
+/// 再次触发所需的额外折叠深度（度）。
+/// 1° 足以滤掉传感器噪声，又不会让人感到门槛。
+constexpr double kRetriggerEpsDeg = 1.0;
+
 /// 半隐式欧拉的步长夹持。下限防止 dt=0，上限只用来兜住进程被挂起这类异常停顿。
 constexpr double kMinDtSec = 1.0 / 240.0;
 constexpr double kMaxDtSec = 0.25;
@@ -98,16 +102,15 @@ bool HingeState::onAngle(int deg, std::int64_t nowMs)
         m_stillSinceMs = nowMs;
         m_prevTheta = 0.0;
         m_prevPhase = Phase::Stable;
-        m_armed = false;
+        m_retriggerTarget = 0.0;
         return false;
     }
 
-    if (std::abs(deg - m_lastRaw) >= m_cfg.deadbandDeg) {
-        m_armed = true;
-        m_lastRaw = deg;
-        m_effective = deg;
-        m_lastChangeMs = nowMs;
-    }
+    // 弹簧目标始终跟随最新读数。平滑交给弹簧本身，不再用死区做第二层量化 ——
+    // 曾经用死区限制更新，慢折时 10° 的门槛要等几百毫秒才累积到，
+    // 起效因此被明显拖慢。弹簧本来就把噪声滤掉了，不需要再量化一遍。
+    m_lastRaw = deg;
+    m_effective = deg;
 
     // 静止判定用「参考点 + 容差」：只有超出容差才换参考点，
     // 于是容差内的抖动不会重置停留计时。
@@ -118,10 +121,17 @@ bool HingeState::onAngle(int deg, std::int64_t nowMs)
 
     advanceSpring(dtMs / 1000.0);
 
-    // 从 Stable 或 Release 都可以（重新）进入 Active。
-    // Release 也要支持：淡出途中用户又折下去时应当立刻恢复，且 θ 由指数趋近
-    // 保证连续、不会从当前值跳回满效果。
-    if (m_armed && thetaTarget() > kThetaEpsilonDeg
+    const double target = thetaTarget();
+    if (target <= kThetaEpsilonDeg) {
+        // 回到原角度上方：彻底复位，下次折下来重新算作首次
+        m_retriggerTarget = 0.0;
+    }
+
+    // 重触发判据：**比上次淡出时折得更深**。
+    // 这样折着不动、原地晃动都不会重触发，而继续往下折则立刻回来。
+    // 从 Stable 与 Release 都可以进入 —— 淡出途中继续折下去应当马上恢复，
+    // θ 由指数趋近保证连续，不会从当前值跳回满效果。
+    if (target > m_retriggerTarget + kRetriggerEpsDeg
         && (m_phase == Phase::Stable || m_phase == Phase::Release)) {
         if (m_phase == Phase::Stable) {
             m_startedMs = nowMs;
@@ -131,7 +141,6 @@ bool HingeState::onAngle(int deg, std::int64_t nowMs)
         // 否则弹簧收敛的那段时间会白白吃掉显示时长。
         m_stillSinceMs = nowMs;
         m_stillRef = m_lastRaw;
-        m_armed = false;
     }
 
     return step(nowMs, dtMs);
@@ -155,6 +164,15 @@ bool HingeState::onNoData(std::int64_t nowMs)
     return step(nowMs, dtMs);
 }
 
+void HingeState::enterRelease(std::int64_t nowMs)
+{
+    m_phase = Phase::Release;
+    m_releaseStartMs = nowMs;
+    // **进入淡出时就记下深度**，而不是等淡出结束。
+    // 否则淡出途中 target(40) 恒大于旧门槛(0)，会立刻被重触发，淡出永远完不成。
+    m_retriggerTarget = thetaTarget();
+}
+
 bool HingeState::step(std::int64_t nowMs, double dtMs)
 {
     switch (m_phase) {
@@ -170,14 +188,12 @@ bool HingeState::step(std::int64_t nowMs, double dtMs)
         if (m_cfg.persistWhileFolded) {
             // 持续模式：只要还低于原角度就一直显示，回到原角度才消失
             if (thetaTarget() <= kThetaEpsilonDeg) {
-                m_phase = Phase::Release;
-                m_releaseStartMs = nowMs;
+                enterRelease(nowMs);
             }
         } else if ((nowMs - m_stillSinceMs) >= m_cfg.dwellMs
                    && (nowMs - m_startedMs) >= m_cfg.minEffectMs) {
             // 停手淡出模式：停手 DwellMs 后开始淡出，哪怕还折着
-            m_phase = Phase::Release;
-            m_releaseStartMs = nowMs;
+            enterRelease(nowMs);
         }
         break;
 
@@ -213,7 +229,7 @@ bool HingeState::onLidClosed()
     m_springVelocity = 0.0;
     m_prevTheta = 0.0;
     m_prevPhase = Phase::Stable;
-    m_armed = false;
+    m_retriggerTarget = 0.0;
     return needsRepaint;
 }
 
@@ -221,7 +237,7 @@ void HingeState::onLidOpened(std::int64_t nowMs)
 {
     m_lidClosed = false;
     m_hasEffective = false; // 下一帧重新建立基准
-    m_armed = false;
+    m_retriggerTarget = 0.0;
     m_lastTickMs = nowMs;
     m_lastChangeMs = nowMs;
     m_stillSinceMs = nowMs;
