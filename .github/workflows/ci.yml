@@ -1,0 +1,91 @@
+# SPDX-FileCopyrightText: 2026 Iwinoid
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# 持续集成。
+#
+# 分两层，因为这两层的成本差得很远：
+#
+#   unit-test  状态机是纯 C++，不依赖 Qt 与 KWin，任何环境几秒钟就能跑完。
+#              逻辑错误在这里挡下来。
+#
+#   build      必须用 Arch 容器。插件工厂的 IID 内嵌 KWin 版本
+#              （org.kde.kwin.EffectPluginFactory<版本>），在别的发行版上
+#              编译出来的产物装到 Arch 上也加载不了。容器里顺带断言
+#              IID 与容器内的 KWin 版本一致 —— 不一致时 KWin 只会写一行
+#              debug 日志然后静默拒绝，是最难查的一类故障。
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # 每天 06:17 UTC 跑一次。Arch 是滚动更新，KWin 升级会让插件静默失效，
+    # 定时跑能在你察觉之前发现「今天的 KWin 编不过了」。
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-test:
+    name: 状态机单测
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 编译并运行
+        run: |
+          g++ -O2 -std=c++20 -Wall -Wextra -Werror -Isrc \
+              tests/hingestate_test.cpp src/hingestate.cpp -o hingestate_test
+          ./hingestate_test
+
+  build:
+    name: 完整构建（Arch 容器）
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装依赖
+        run: |
+          pacman -Syu --noconfirm --needed \
+            base-devel cmake ninja extra-cmake-modules \
+            qt6-base qt6-tools kwin kconfig kcoreaddons ki18n \
+            kwidgetsaddons kcmutils vulkan-headers
+
+      - name: 记录所对的 KWin 版本
+        run: |
+          KWIN=$(pacman -Q kwin | awk '{print $2}')
+          echo "对 KWin $KWIN 构建" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: 配置与构建
+        run: |
+          cmake -S . -B build -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+          cmake --build build
+
+      - name: 测试
+        run: cd build && ctest --output-on-failure
+
+      - name: 断言插件 IID 与 KWin 版本一致
+        run: |
+          EXPECTED="org.kde.kwin.EffectPluginFactory$(pacman -Q kwin | awk '{print $2}' | cut -d- -f1)"
+          ACTUAL=$(strings build/bin/kwin/effects/plugins/hinge_glass.so \
+                   | grep -o 'org\.kde\.kwin\.EffectPluginFactory[0-9.]*' | head -1)
+          echo "期望 $EXPECTED" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "实际 $ACTUAL" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "::error::插件 IID 与 KWin 版本不一致 —— KWin 会静默拒绝加载该插件"
+            exit 1
+          fi
+
+      - name: 确认两个产物都在
+        run: |
+          for f in build/bin/kwin/effects/plugins/hinge_glass.so \
+                   build/bin/kwin_hinge_glass_config.so; do
+            test -f "$f" || { echo "::error::缺少产物 $f"; exit 1; }
+            echo "$f  $(stat -c %s "$f") 字节"
+          done

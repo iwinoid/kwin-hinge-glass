@@ -3,6 +3,7 @@
 [English](README.md)
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen?style=for-the-badge)](https://github.com/RichardLitt/standard-readme)
+[![CI](https://img.shields.io/github/actions/workflow/status/iwinoid/kwin-hinge-glass/ci.yml?style=for-the-badge&label=CI&logo=github)](https://github.com/iwinoid/kwin-hinge-glass/actions/workflows/ci.yml)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue?style=for-the-badge)](https://spdx.org/licenses/GPL-3.0-or-later.html)
 [![powered by DeepSeek](https://img.shields.io/badge/powered_by-DeepSeek_V4.1-4D6BFE?style=for-the-badge&logo=deepseek&logoColor=white)](https://deepseek.com)
 [![powered by dsh](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=for-the-badge&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
@@ -171,6 +172,10 @@ cd hinge-glass
 ## 疑难
 
 ### KWin 升级后特效失效
+
+CI 每天对 Arch 仓库里的 KWin 版本构建一次。绿色表示代码仍能对当天的 KWin 编译；红色表示要改代码才能重建。
+
+每次发现新的 KWin 版本，CI 会发布一个名为 `kwin-<版本>` 的 Release，压缩包里是两个插件和一份安装说明。**该压缩包只对那个 KWin 版本有效。**
 
 插件工厂 ID 里含 KWin 版本号，例如 `org.kde.kwin.EffectPluginFactory6.7.5`。KWin 的补丁版本升级会改变这个 ID。KWin 随后拒绝该插件，并且只写一行调试日志。每次 KWin 升级后运行 `./rebuild.sh`。
 

@@ -1,0 +1,162 @@
+# SPDX-FileCopyrightText: 2026 Iwinoid
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Arch 的 kwin 一升级，就自动重编并发布一个按版本命名的 Release。
+#
+# 为什么需要：插件工厂的 IID 内嵌 KWin 版本
+# （org.kde.kwin.EffectPluginFactory6.7.5）。补丁版本一变，旧产物就加载不了，
+# 而且 KWin 只写一行 debug 日志、静默拒绝 —— 表现为「特效勾了没反应」。
+#
+# 流程：
+#   check    在 Arch 容器里查仓库的 kwin 版本，和已有的 tag 比。
+#            没变就直接结束，一次构建都不做。
+#   build    变了才编。产物按 kwin-<版本> 打包。
+#   publish  用宿主机上的 gh 建 Release（容器里没有 gh）。
+#
+# 注意：Release 里的产物只对**同一个 KWin 版本**有效。
+# 本机用户其实用 packaging/kwin-hinge-glass.hook 本地重编更稳
+# —— 那样版本必然对得上，也不依赖网络。
+
+name: Rebuild on KWin update
+
+on:
+  schedule:
+    # 每天 06:23 UTC。Arch 的 kwin 通常几天到几周升一次。
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    name: 查 Arch 的 kwin 版本
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      needed: ${{ steps.v.outputs.needed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # 需要看到已有的 tag
+
+      - name: 与已有 tag 比较
+        id: v
+        run: |
+          pacman -Sy --noconfirm >/dev/null
+          # pacman -Si 读的是仓库里的版本，不是容器里已装的版本
+          VERSION=$(pacman -Si kwin | awk '/^Version/{print $3}' | cut -d- -f1)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/kwin-$VERSION" >/dev/null; then
+            echo "needed=no" >> "$GITHUB_OUTPUT"
+            echo "kwin-$VERSION 已发布过，跳过" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "needed=yes" >> "$GITHUB_OUTPUT"
+            echo "发现新版本 $VERSION，准备构建" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+  build:
+    name: 构建 kwin-${{ needs.check.outputs.version }}
+    needs: check
+    if: needs.check.outputs.needed == 'yes'
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装依赖
+        run: |
+          pacman -Syu --noconfirm --needed \
+            base-devel cmake ninja extra-cmake-modules \
+            qt6-base qt6-tools kwin kconfig kcoreaddons ki18n \
+            kwidgetsaddons kcmutils vulkan-headers
+
+      - name: 构建
+        run: |
+          cmake -S . -B build -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+          cmake --build build
+
+      - name: 测试
+        run: cd build && ctest --output-on-failure
+
+      - name: 断言 IID 与目标版本一致
+        env:
+          TARGET: ${{ needs.check.outputs.version }}
+        run: |
+          # 必须和 check 查到的仓库版本一致，而不是容器里恰好装上的版本
+          ACTUAL=$(strings build/bin/kwin/effects/plugins/hinge_glass.so \
+                   | grep -o 'org\.kde\.kwin\.EffectPluginFactory[0-9.]*' | head -1)
+          if [ "$ACTUAL" != "org.kde.kwin.EffectPluginFactory$TARGET" ]; then
+            echo "::error::构建出的 IID 是 $ACTUAL，与目标 $TARGET 不符"
+            exit 1
+          fi
+
+      - name: 打包
+        env:
+          TARGET: ${{ needs.check.outputs.version }}
+        run: |
+          mkdir -p dist
+          cp build/bin/kwin/effects/plugins/hinge_glass.so dist/
+          cp build/bin/kwin_hinge_glass_config.so dist/
+          cp LICENSE NOTICE dist/
+          cat > dist/README.txt <<EOF
+          kwin-hinge-glass —— 对 KWin $TARGET 构建
+
+          安装（需要 root）：
+            sudo install -Dm755 hinge_glass.so \\
+              /usr/lib/qt6/plugins/kwin/effects/plugins/hinge_glass.so
+            sudo install -Dm755 kwin_hinge_glass_config.so \\
+              /usr/lib/qt6/plugins/kwin/effects/configs/kwin_hinge_glass_config.so
+
+          这些产物只对 KWin $TARGET 有效。插件工厂的 IID 内嵌 KWin 版本，
+          版本不符时 KWin 会静默拒绝加载。
+          装完需要注销重登（除非是首次安装）。
+          EOF
+          tar -czf "kwin-hinge-glass-$TARGET.tar.gz" -C dist .
+          ls -la ./*.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: ./*.tar.gz
+
+  publish:
+    name: 发布
+    needs: [check, build]
+    if: needs.check.outputs.needed == 'yes'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+
+      - name: 写发布说明
+        env:
+          TARGET: ${{ needs.check.outputs.version }}
+        run: |
+          {
+            echo "对 KWin $TARGET 构建的产物。"
+            echo
+            echo "Arch 的 kwin 升到 $TARGET 后自动触发。补丁版本变化也会让旧产物失效 ——"
+            echo "插件工厂的 IID 内嵌 KWin 版本，不符时 KWin 会静默拒绝加载。"
+            echo
+            echo '```'
+            echo "sudo install -Dm755 hinge_glass.so /usr/lib/qt6/plugins/kwin/effects/plugins/hinge_glass.so"
+            echo "sudo install -Dm755 kwin_hinge_glass_config.so /usr/lib/qt6/plugins/kwin/effects/configs/kwin_hinge_glass_config.so"
+            echo '```'
+            echo
+            echo "首次安装可以热加载；覆盖升级需要注销重登。"
+          } > notes.md
+
+      - name: 建 Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ needs.check.outputs.version }}
+        run: |
+          gh release create "kwin-$TARGET" ./*.tar.gz \
+            --title "KWin $TARGET" \
+            --notes-file notes.md

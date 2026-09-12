@@ -3,6 +3,7 @@
 [简体中文](README.zh_CN.md)
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen?style=for-the-badge)](https://github.com/RichardLitt/standard-readme)
+[![CI](https://img.shields.io/github/actions/workflow/status/iwinoid/kwin-hinge-glass/ci.yml?style=for-the-badge&label=CI&logo=github)](https://github.com/iwinoid/kwin-hinge-glass/actions/workflows/ci.yml)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue?style=for-the-badge)](https://spdx.org/licenses/GPL-3.0-or-later.html)
 [![powered by DeepSeek](https://img.shields.io/badge/powered_by-DeepSeek_V4.1-4D6BFE?style=for-the-badge&logo=deepseek&logoColor=white)](https://deepseek.com)
 [![powered by dsh](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=for-the-badge&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
@@ -172,6 +173,10 @@ The physical size of the panel is often unavailable. Measure the screen height a
 ## Troubleshooting
 
 ### The effect stops working after a KWin update
+
+CI builds the effect against the KWin version in the Arch repositories every day. A green run means the code still compiles against today's KWin. A red run means the source needs a change before the next rebuild.
+
+Each green run that finds a new KWin version publishes a release named `kwin-<version>`. The archive holds both plugins and a short install note. The archive only works on that exact KWin version.
 
 The plugin factory ID contains the KWin version, for example `org.kde.kwin.EffectPluginFactory6.7.5`. A patch release of KWin changes that ID. KWin then rejects the plugin and writes one debug line only. Run `./rebuild.sh` after each KWin update.
 
