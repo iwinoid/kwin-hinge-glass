@@ -32,6 +32,7 @@ The lid closes from 100° and opens again. The recording loops.
   - [Check your machine](#check-your-machine)
   - [Other sensors](#other-sensors)
   - [From the AUR](#from-the-aur)
+  - [Other distributions](#other-distributions)
   - [From Source](#from-source)
   - [Uninstall](#uninstall)
 - [Usage](#usage)
@@ -101,6 +102,43 @@ To attach another sensor, change `findDevicePath()`, or replace the reader in th
 ```bash
 paru -S kwin-hinge-glass
 ```
+
+### Other distributions
+
+The AUR package covers Arch. Everywhere else, build from source. The build needs the KWin development headers, Qt 6, KF6 and libepoxy.
+
+Arch:
+
+```bash
+sudo pacman -S --needed base-devel cmake ninja extra-cmake-modules qt6-base \
+  qt6-tools kwin kconfig kcoreaddons ki18n kwidgetsaddons kcmutils \
+  kwindowsystem kcolorscheme kconfigwidgets libepoxy vulkan-headers
+```
+
+Debian and Ubuntu:
+
+```bash
+sudo apt install cmake ninja-build extra-cmake-modules qt6-base-dev \
+  qt6-tools-dev kwin-dev libkf6config-dev libkf6coreaddons-dev libkf6i18n-dev \
+  libkf6widgetsaddons-dev libkf6kcmutils-dev libkf6windowsystem-dev \
+  libkf6colorscheme-dev libkf6configwidgets-dev libepoxy-dev libvulkan-dev
+```
+
+Fedora:
+
+```bash
+sudo dnf install cmake ninja-build extra-cmake-modules qt6-qtbase-devel \
+  qt6-qttools-devel kwin-devel kf6-kconfig-devel kf6-kcoreaddons-devel \
+  kf6-ki18n-devel kf6-kwidgetsaddons-devel kf6-kcmutils-devel \
+  kf6-kwindowsystem-devel kf6-kcolorscheme-devel kf6-kconfigwidgets-devel \
+  libepoxy-devel vulkan-headers
+```
+
+Then run `./rebuild.sh`.
+
+A KWin effect cannot ship as a Flatpak or a Snap. It is a plugin that loads into the compositor process, so it must sit in the system plugin directory. That leaves source builds and distribution packages.
+
+No other distribution packages this effect yet. If you package it, the source uses plain CMake and extra-cmake-modules. `rebuild.sh` asks `qmake6` for the plugin directory instead of assuming `/usr/lib/qt6/plugins`, so it works on Fedora and Debian layouts too.
 
 ### From Source
 

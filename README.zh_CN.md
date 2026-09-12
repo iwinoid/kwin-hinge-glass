@@ -31,6 +31,7 @@
   - [先检查你的机器](#先检查你的机器)
   - [其他传感器](#其他传感器)
   - [从 AUR 安装](#从-aur-安装)
+  - [其他发行版](#其他发行版)
   - [从源码构建](#从源码构建)
   - [卸载](#卸载)
 - [用法](#用法)
@@ -100,6 +101,43 @@ Chromebook 全系都有。驱动来自 ChromeOS EC，因此其他使用 Chrome E
 ```bash
 paru -S kwin-hinge-glass
 ```
+
+### 其他发行版
+
+AUR 上的包只管 Arch。其他地方请从源码构建。构建需要 KWin 的开发头文件、Qt 6、KF6 与 libepoxy。
+
+Arch：
+
+```bash
+sudo pacman -S --needed base-devel cmake ninja extra-cmake-modules qt6-base \
+  qt6-tools kwin kconfig kcoreaddons ki18n kwidgetsaddons kcmutils \
+  kwindowsystem kcolorscheme kconfigwidgets libepoxy vulkan-headers
+```
+
+Debian 与 Ubuntu：
+
+```bash
+sudo apt install cmake ninja-build extra-cmake-modules qt6-base-dev \
+  qt6-tools-dev kwin-dev libkf6config-dev libkf6coreaddons-dev libkf6i18n-dev \
+  libkf6widgetsaddons-dev libkf6kcmutils-dev libkf6windowsystem-dev \
+  libkf6colorscheme-dev libkf6configwidgets-dev libepoxy-dev libvulkan-dev
+```
+
+Fedora：
+
+```bash
+sudo dnf install cmake ninja-build extra-cmake-modules qt6-qtbase-devel \
+  qt6-qttools-devel kwin-devel kf6-kconfig-devel kf6-kcoreaddons-devel \
+  kf6-ki18n-devel kf6-kwidgetsaddons-devel kf6-kcmutils-devel \
+  kf6-kwindowsystem-devel kf6-kcolorscheme-devel kf6-kconfigwidgets-devel \
+  libepoxy-devel vulkan-headers
+```
+
+然后运行 `./rebuild.sh`。
+
+KWin 特效装不成 Flatpak 或 Snap。它是加载进合成器进程里的插件，必须放在系统插件目录。所以只剩源码构建和发行版打包两条路。
+
+目前没有其他发行版打包这个特效。如果你想打，源码用的是标准 CMake 与 extra-cmake-modules；`rebuild.sh` 通过 `qmake6` 询问插件目录，而不是假定 `/usr/lib/qt6/plugins`，所以在 Fedora 与 Debian 的目录布局下也能用。
 
 ### 从源码构建
 

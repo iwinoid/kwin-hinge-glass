@@ -42,7 +42,7 @@ makedepends=(
     'vulkan-headers'
 )
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('a0f0ee7caff5b3fbb6d352a581ec91d415c26a75d1bd014ee4db83012b173f75')
 install="$pkgname.install"
 
 build() {
