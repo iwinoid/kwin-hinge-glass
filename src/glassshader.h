@@ -6,8 +6,11 @@
     玻璃折叠着色器 —— 移植自 macOS 参考实现 MacBook Duo / HingeGlass 的 Metal glassMain
     （源文件 Sources/GlassRenderer.swift 的 glassMain，第 127-172 行）。
 
-    移植约定（全部对照 KWin 6.7.5 源码核实）：
-      * 不写 #version —— KWin 自己注入 #version 140，写了会被丢弃（glshader.cpp:115-116）
+    移植约定（对照 KWin 6.7.5 源码与 6.8.0 核实）：
+      * 不写 #version —— KWin 自己注入，写了会被丢弃（glshader.cpp 里
+        startsWith("#version") 那个分支注明 intentionally ignored）。
+        注入的版本随 KWin 走：6.7.5 桌面 GL 下是 140，6.8 移除桌面 OpenGL
+        支持后恒为 "#version 300 es"。
       * 顶点源码留空 -> 复用 KWin 的 base.vert，免费获得 texcoord0 与
         modelViewProjectionMatrix
       * 片元源码非空时 KWin 什么都不自动声明，所以下面三行必须自己写

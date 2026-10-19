@@ -161,16 +161,16 @@ void HingeGlassEffect::repaintInternalOutputs()
 {
     // 只重绘内置屏。addRepaintFull() 会把外接屏也一并重绘，
     // 而这个特效跟外接屏毫无关系。
-    bool any = false;
+    //
+    // 一个内置屏都没有时什么都不做：本特效只在 isInternal() 的输出上作画
+    // （prePaintScreen 与 paintScreen 都以它为前提），没有可重绘的内容。
+    // 这里原先是无条件自递归 `if (!any) repaintInternalOutputs();` ——
+    // screens() 不会因为再调一次就多出内置屏，只会一路递归到栈溢出。
     const auto outputs = effects->screens();
     for (LogicalOutput *output : outputs) {
         if (output->isInternal()) {
             effects->addRepaint(output->geometry());
-            any = true;
         }
-    }
-    if (!any) {
-        repaintInternalOutputs();
     }
 }
 

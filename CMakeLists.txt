@@ -45,8 +45,10 @@ find_package(KWin REQUIRED COMPONENTS kwineffects)
 find_package(KWinDBusInterface CONFIG REQUIRED)
 find_package(epoxy REQUIRED)
 
-if(KWin_VERSION VERSION_LESS 6.7)
-    message(FATAL_ERROR "铰链玻璃只支持 KWin 6.7 及以上，当前是 ${KWin_VERSION}")
+# 下限是 6.8 而不是 6.7：6.8 起 Effect::paintScreen() 返回 [[nodiscard]] bool
+# （上游 MR !9633），6.7 还是 void —— 源码只对 6.8 及以上成立。
+if(KWin_VERSION VERSION_LESS 6.8)
+    message(FATAL_ERROR "铰链玻璃只支持 KWin 6.8 及以上，当前是 ${KWin_VERSION}")
 endif()
 message(STATUS "目标 KWin 版本: ${KWin_VERSION}")
 

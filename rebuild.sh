@@ -6,9 +6,11 @@
 # 重新编译并安装铰链玻璃特效。
 #
 # 为什么需要这个脚本：KWin 的插件工厂 IID 内嵌 KWin 版本号
-# （org.kde.kwin.EffectPluginFactory6.7.5，见 effect.h:1131），
-# 所以**补丁版本变化也会导致加载失败**，而且是静默的
-# （effectloader.cpp:305-313 只打一行 debug 日志就 return nullptr）。
+# （org.kde.kwin.EffectPluginFactory6.8.0，见 effect.h），
+# 所以**补丁版本变化也会导致加载失败**（effectloader 直接 return nullptr）。
+# 6.8 起这件事会记成一条明确的警告
+# （"was built for a different version of KWin and needs to be rebuilt"），
+# 不必再去翻 debug 日志。
 #
 # 用法：
 #   ./rebuild.sh            编译并安装

@@ -223,7 +223,7 @@ CI builds the effect against the KWin version in the Arch repositories every day
 
 The package on the AUR builds from source, so the result always matches the KWin on your machine. Run `paru -S kwin-hinge-glass` again after a KWin update. The package version shows when that is needed: `0.2.0-1` becomes `0.2.0-2`.
 
-The plugin factory ID contains the KWin version, for example `org.kde.kwin.EffectPluginFactory6.7.5`. A patch release of KWin changes that ID. KWin then rejects the plugin and writes one debug line only. Run `./rebuild.sh` after each KWin update.
+The plugin factory ID contains the KWin version, for example `org.kde.kwin.EffectPluginFactory6.8.0`. A patch release of KWin changes that ID. KWin then rejects the plugin and logs that it "was built for a different version of KWin and needs to be rebuilt". Run `./rebuild.sh` after each KWin update.
 
 Plasma publishes its bugfix releases on a fixed schedule. The gaps between them are 1, 1, 2, 3, 5 and 8 weeks. A feature release arrives every four months and starts the cycle again. Expect about five rebuilds in the three months after a feature release, then a quieter stretch. See the [Plasma 6 schedule](https://community.kde.org/Schedules/Plasma_6).
 
