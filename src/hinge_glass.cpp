@@ -301,19 +301,17 @@ HingeGlassEffect::OutputState *HingeGlassEffect::ensureOutput(LogicalOutput *scr
     return &state;
 }
 
-void HingeGlassEffect::paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport,
+bool HingeGlassEffect::paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport,
                                    int mask, const Region &deviceRegion, LogicalOutput *screen)
 {
     // 非内置屏直接透传 —— 特效只该作用在内置面板上
     if (!isActive() || !screen || !screen->isInternal()) {
-        effects->paintScreen(renderTarget, viewport, mask, deviceRegion, screen);
-        return;
+        return effects->paintScreen(renderTarget, viewport, mask, deviceRegion, screen);
     }
 
     OutputState *state = ensureOutput(screen, renderTarget);
     if (!state) {
-        effects->paintScreen(renderTarget, viewport, mask, deviceRegion, screen);
-        return;
+        return effects->paintScreen(renderTarget, viewport, mask, deviceRegion, screen);
     }
 
     // 1) 把场景渲染进离屏纹理。
@@ -324,8 +322,14 @@ void HingeGlassEffect::paintScreen(const RenderTarget &renderTarget, const Rende
     const RenderViewport fboViewport(viewport.renderRect(), viewport.scale(), fboTarget, QPoint());
 
     GLFramebuffer::pushFramebuffer(state->framebuffer.get());
-    effects->paintScreen(fboTarget, fboViewport, mask, deviceRegion, screen);
+    const bool painted = effects->paintScreen(fboTarget, fboViewport, mask, deviceRegion, screen);
     GLFramebuffer::popFramebuffer();
+
+    // KWin 6.8 起 paintScreen 返回「绘画是否成功」（GPU reset 等情况下为 false）。
+    // 上游要求失败时立即停止渲染：不能再做 mipmap、也不能把纹理画回屏幕。
+    if (!painted) {
+        return false;
+    }
 
     // 2) 生成 mipmap。必须在渲染结束且 pop 之后；
     //    generateMipmaps() 内部不 bind，要自己先 bind（对比 render() 是有 bind 的）。
@@ -335,6 +339,7 @@ void HingeGlassEffect::paintScreen(const RenderTarget &renderTarget, const Rende
 
     // 3) 用玻璃着色器画回屏幕
     drawGlass(viewport, state);
+    return true;
 }
 
 void HingeGlassEffect::drawGlass(const RenderViewport &viewport, OutputState *state)
